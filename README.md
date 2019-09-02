@@ -29,11 +29,10 @@ performance, safety. These are outside of my interest for a new hobby language.
 
 ## Work Queue
 
-- Finish up `fn`: eager/lazy bindings, which will allow recursion and local
-  variables/functions.
 - Write some docstrings with test examples.
 - Write some basic integration tests. (Unit tests to be postponed until the
   relevant set of 'units' are stable.)
+- Check for forbidden identifiers on definitions.
 
 ## Roadmap
 
@@ -51,23 +50,26 @@ performance, safety. These are outside of my interest for a new hobby language.
   - Variables cannot be re-assigned nor are their values mutable. Thus, they are
     only useful for reuse of a value, *not* a mutable shared state.
 
-- [ ] Quotations / Functions
+- [x] Quotations / Functions
   - [x] Quotation: `[ 2 2 + ]`
   - [x] Add stack-of-stacks (-> lexical scoping w/ variable shadowing)
     - [x] Allow nested quotations.
-    - [ ] Default to eager capture but fall back to late binding (-> recursion).
+    - [x] Allow lazy `let` and lazy `fn` (-> local functions).
+    - [x] ~~Default to eager capture but fall back to late binding (->
+          recursion).~~
       - Caveat: This allows name collision in inner scopes which redefine a
         variable.
-    - [ ] Allow lazy `let` and lazy `fn` (-> local functions).
-  - `[` makes all non-identifier evaluation lazy; identifiers are eagerly
-    captured if possible. `]` consumes up to the nearest `[` to construct the
-    quotation.
+      - Deferred; since variables are *always* immutable, the above caveat is
+        the only time late binding differs from eager capture, other than small
+        potential performance gains
+      - `[` makes all evaluation lazy. `]` consumes up to the nearest `[` to
+        construct the quotation.
   - [x] Implement `call`: evaluates the quotation on the top of the stack
   - [x] Function: `fn sq = 2 ^`
     - Function definitions are implicit quotations. A function reference pushes
       the quotation then calls `call`.
     - Composition/currying for free, hopefully.
-  - [ ] Can push the quotation definition without calling `apply`, e.g. `'fn`.
+  - [ ] Can push the quotation definition without calling `apply`, e.g. `''fn`.
 
 - [ ] Logic / Booleans
   - [ ] Booleans: `true` `false` `and` `or` `not`
@@ -97,7 +99,8 @@ performance, safety. These are outside of my interest for a new hobby language.
             about evaluation order.
   
 - [ ] Operators
-  - [ ] `let` form which is not on its own line, `1 'a let'` = `^let a = 1`
+  - [x] `let` form which is not on its own line, `1 'a let'` = `^let a = 1`
+  - [x] `fn` form "
   - [ ] `dup` `swap` `drop` etc. 
   - [ ] Function concatenation operator. See [TODO: find the
         link](http://google.com). `2 2 3 3 +,+` = `2 2 + 3 3 +`
@@ -105,8 +108,8 @@ performance, safety. These are outside of my interest for a new hobby language.
 - Misc
   - [ ] Write some tests so I don't have to manually check things every time
   - [ ] Write some docs that are more organized than this haphazard roadmap
+  - [ ] Use macros to generalize a bunch of repetitive code
   - [ ] Add transaction logging to Env to facilitate easier debugging
   - [ ] Loops/Iteration (of some kind)
-  - [ ] Multiline definitions for functions / variables
   - [ ] Comments
   - [ ] I/O that isn't just printing the whole state (maybe `print`?)

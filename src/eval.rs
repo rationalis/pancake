@@ -1,7 +1,7 @@
 use regex::Regex;
 use crate::types::{ARITHMETIC_OPS, NumType, Atom, Stack, Env};
 
-pub fn parse_token(token: &str) -> Option<Atom> {
+pub fn parse_token(token: String) -> Option<Atom> {
     if let Ok(num) = token.parse::<NumType>() {
         return Some(Atom::Num(num));
     }
@@ -17,11 +17,20 @@ pub fn parse_token(token: &str) -> Option<Atom> {
         }
     }
 
-    if token == "call" {
-        return Some(Atom::Call);
+    if let Some('\'') = token.chars().next() {
+        let (_, ident) = token.split_at(1);
+        return Some(Atom::Symbol(ident.to_string()));
     }
 
-    Some(Atom::Plain(token.to_string()))
+    if token == "call" {
+        return Some(Atom::Call);
+    } else if token == "let" {
+        return Some(Atom::DefOp(false));
+    } else if token == "fn" {
+        return Some(Atom::DefOp(true));
+    }
+
+    Some(Atom::Plain(token))
 }
 
 // TODO: Generalize arity and types using macro (generics are not enough)
@@ -73,7 +82,7 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
             env.push_atom(Atom::Quotation(q, true));
             eval_atom(Atom::Call, env);
         },
-        Atom::Def(ident, mut expr, lazy) => {
+        Atom::DefUnparsed(ident, mut expr, lazy) => {
             if lazy { expr = format!("[ {} ]", expr); }
             let mut result_of_expr = eval_with_new_scope(&expr, env, lazy);
             if lazy {
@@ -84,6 +93,23 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
                 }
             }
             env.bind_var(ident, result_of_expr);
+        },
+        Atom::DefOp(is_function) => {
+            let a = env.pop_atom();
+            let b = env.pop_atom();
+            if is_function {
+                if let (Atom::Symbol(ident), Atom::Quotation(q, _)) = (a, b) {
+                    env.bind_var(ident, Atom::Quotation(q, true));
+                } else {
+                    panic!("Expected '<quotation> <ident> fn'.")
+                }
+            } else {
+                if let (Atom::Symbol(ident), Atom::Num(num)) = (a, b) {
+                    env.bind_var(ident, Atom::Num(num));
+                } else {
+                    panic!("Expected '<num> <ident> let'.")
+                }
+            }
         },
         Atom::Call => {
             if let Atom::Quotation(q, _) = env.pop_atom() {
@@ -135,7 +161,7 @@ pub fn parse_def(line: &String) -> Option<Atom> {
         let ident = caps["ident"].to_string();
         let expr = caps["expr"].to_string();
 
-        return Some(Atom::Def(ident, expr, decl == "fn"));
+        return Some(Atom::DefUnparsed(ident, expr, decl == "fn"));
     }
     None
 }
@@ -149,7 +175,7 @@ pub fn eval_line(line: &String, env: &mut Env) {
 
     let iter = line.split_ascii_whitespace();
     for token in iter {
-        if let Some(atom) = parse_token(token) {
+        if let Some(atom) = parse_token(token.to_string()) {
             eval_atom(atom, env);
         } else {
             panic!("Unrecognized token.");

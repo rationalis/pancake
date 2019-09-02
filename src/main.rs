@@ -9,9 +9,9 @@ mod eval;
 pub(crate) mod types {
     use std::collections::HashMap;
 
-    pub const SPECIAL_CHARS : &str = "+-*/%[]";
+    pub const SPECIAL_CHARS : &str = "+-*/%[]'";
     pub const ARITHMETIC_OPS : &str = "+-*/%";
-    pub const SPECIAL_IDENTS : [&'static str;1] = ["call"];
+    pub const SPECIAL_IDENTS : [&'static str;3] = ["call", "let", "fn"];
 
     pub type NumType = i32;
     pub type Identifier = String;
@@ -28,8 +28,10 @@ pub(crate) mod types {
         QuotationStart, // [
         QuotationEnd, // ]
         Quotation(Vec<Atom>, IsFunction),
-        Def(Identifier, UnparsedExpr, IsFunction),
+        DefUnparsed(Identifier, UnparsedExpr, IsFunction),
+        DefOp(IsFunction),
         Call,
+        Symbol(Identifier),
         Plain(Identifier)
     }
 
