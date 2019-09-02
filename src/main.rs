@@ -11,6 +11,7 @@ pub(crate) mod types {
 
     pub const SPECIAL_CHARS : &str = "+-*/%[]";
     pub const ARITHMETIC_OPS : &str = "+-*/%";
+    pub const SPECIAL_IDENTS : [&'static str;1] = ["call"];
 
     pub type NumType = i32;
     pub type IsFunction = bool;
@@ -18,7 +19,7 @@ pub(crate) mod types {
     pub type Stack = Vec<Atom>;
     pub type Frame = (Stack, Context, bool);
 
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, Eq, PartialEq)]
     pub enum Atom {
         Num(NumType),
         ArithmeticOp(char),
@@ -96,6 +97,10 @@ pub(crate) mod types {
             } else {
                 panic!("Expected result but stack was empty.");
             }
+        }
+
+        pub fn lazy_mode(&self) -> bool {
+            self.0.last().unwrap().2
         }
     }
 }

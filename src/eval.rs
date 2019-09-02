@@ -38,34 +38,47 @@ pub fn eval_binary_op<F>(op: F, stack: &mut Stack) where
 /// this simply pushes them onto the stack.
 pub fn eval_atom(atom: Atom, env: &mut Env) {
     let mut to_push : Option<Atom> = None;
-    match atom {
-        Atom::ArithmeticOp(c) => {
-            let ref mut stack = env.last_frame().0;
-            match c {
-                '+' => eval_binary_op(|a,b| a+b, stack),
-                '-' => eval_binary_op(|a,b| a-b, stack),
-                '*' => eval_binary_op(|a,b| a*b, stack),
-                '/' => eval_binary_op(|a,b| a/b, stack),
-                '%' => eval_binary_op(|a,b| a%b, stack),
-                _ => ()
-            }
-        },
-        Atom::QuotationStart => {
-            env.push_blank(true);
-        },
-        Atom::QuotationEnd => {
-            let stack: Stack = env.pop().unwrap().0;
-            let quotation = Atom::Quotation(stack, false);
-            to_push = Some(quotation);
-        },
-        Atom::Plain(ident) => {
-            if let Some(atom) = env.find_var(&ident) {
-                to_push = Some(atom);
-            } else {
-                panic!("Unrecognized identifier: {}", ident);
-            };
-        },
-        _ => { to_push = Some(atom); }
+    if env.lazy_mode() && atom != Atom::QuotationEnd {
+        to_push = Some(atom);
+    } else {
+        match atom {
+            Atom::ArithmeticOp(c) => {
+                let ref mut stack = env.last_frame().0;
+                match c {
+                    '+' => eval_binary_op(|a,b| a+b, stack),
+                    '-' => eval_binary_op(|a,b| a-b, stack),
+                    '*' => eval_binary_op(|a,b| a*b, stack),
+                    '/' => eval_binary_op(|a,b| a/b, stack),
+                    '%' => eval_binary_op(|a,b| a%b, stack),
+                    _ => ()
+                }
+            },
+            Atom::QuotationStart => {
+                env.push_blank(true);
+            },
+            Atom::QuotationEnd => {
+                let stack: Stack = env.pop().unwrap().0;
+                let quotation = Atom::Quotation(stack, false);
+                to_push = Some(quotation);
+            },
+            Atom::Plain(ref ident) if ident == "call" => {
+                if let Some(Atom::Quotation(quoted_stack, _)) =
+                    env.last_frame().0.pop()
+                {
+                    for atom in quoted_stack { eval_atom(atom, env); }
+                } else {
+                    panic!("Tried to call a non-quotation / nothing.");
+                }
+            },
+            Atom::Plain(ident) => {
+                if let Some(atom) = env.find_var(&ident) {
+                    to_push = Some(atom);
+                } else {
+                    panic!("Unrecognized identifier: {}", ident);
+                };
+            },
+            _ => { to_push = Some(atom); }
+        }
     }
 
     if let Some(atom) = to_push {
