@@ -16,7 +16,6 @@ pub(crate) mod types {
     pub type IsFunction = bool;
 
     pub type Stack = Vec<Atom>;
-    pub type Context = HashMap<String, Atom>;
     pub type Frame = (Stack, Context, bool);
 
     #[derive(Debug, Clone)]
@@ -28,6 +27,25 @@ pub(crate) mod types {
         FunctionEnd, // implicit ]
         Quotation(Vec<Atom>, IsFunction),
         Plain(String)
+    }
+
+    #[derive(Debug)]
+    pub struct Context(HashMap<String, Atom>);
+
+    impl Context {
+        fn new() -> Context {
+            Context(HashMap::new())
+        }
+
+        fn get(&self, ident: &String) -> Option<&Atom> {
+            self.0.get(ident)
+        }
+
+        fn insert(&mut self, ident: String, atom: Atom) {
+            if let Some(_) = self.0.insert(ident, atom) {
+                panic!("Attempted to rebind existing variable.");
+            }
+        }
     }
 
     #[derive(Debug)]
@@ -55,6 +73,10 @@ pub(crate) mod types {
             self.0.pop()
         }
 
+        pub fn bind_var(&mut self, ident: String, atom: Atom) {
+            self.last_frame().1.insert(ident, atom)
+        }
+
         pub fn find_var(&mut self, ident: &String) -> Option<Atom> {
             for frame in self.0.iter().rev() {
                 let context = &frame.1;
@@ -63,6 +85,17 @@ pub(crate) mod types {
                 }
             }
             None
+        }
+
+        pub fn eval_with_new_scope(&mut self, expr: &String) -> Atom {
+            self.push_blank(false);
+            crate::eval::eval_line(&expr, self);
+            let mut stack : Stack = self.pop().unwrap().0;
+            if let Some(atom) = stack.pop() {
+                return atom;
+            } else {
+                panic!("Expected result but stack was empty.");
+            }
         }
     }
 }

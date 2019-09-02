@@ -1,5 +1,5 @@
 use regex::Regex;
-use crate::types::*;
+use crate::types::{ARITHMETIC_OPS, NumType, Atom, Stack, Env};
 
 pub fn eval_token(token: &str) -> Option<Atom> {
     if let Ok(num) = token.parse::<NumType>() {
@@ -68,8 +68,8 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
         _ => { to_push = Some(atom); }
     }
 
-    let ref mut stack = env.last_frame().0;
     if let Some(atom) = to_push {
+        let ref mut stack = env.last_frame().0;
         stack.push(atom);
     }
 }
@@ -83,21 +83,9 @@ pub fn eval_let(line: &String, env: &mut Env) -> bool {
     if let Some(caps) = captures {
         // TODO: handle forbidden identifiers
         let ident = caps["ident"].to_string();
-
-        let context : &Context = &env.last_frame().1;
-        if context.contains_key(&ident) {
-            panic!("Attempted to rebind existing variable.");
-        }
-
         let expr = caps["expr"].to_string();
-
-        env.push_blank(false);
-        eval_line(&expr, env);
-        let mut stack : Stack = env.pop().unwrap().0;
-        let result_of_expr : Atom = stack.pop().unwrap();
-
-        let ref mut context : Context = env.last_frame().1;
-        context.insert(ident, result_of_expr);
+        let result_of_expr = env.eval_with_new_scope(&expr);
+        env.bind_var(ident, result_of_expr);
 
         true
     } else { false }
