@@ -22,6 +22,7 @@ pub fn parse_token(token: String) -> Option<Atom> {
         return Some(Atom::Symbol(ident.to_string()));
     }
 
+    // TODO: Replace this with a lookup into a static HashMap.
     if token == "call" {
         return Some(Atom::Call);
     } else if token == "let" {
@@ -82,10 +83,10 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
             env.push_atom(Atom::Quotation(q, true));
             eval_atom(Atom::Call, env);
         },
-        Atom::DefUnparsed(ident, mut expr, lazy) => {
-            if lazy { expr = format!("[ {} ]", expr); }
-            let mut result_of_expr = eval_with_new_scope(&expr, env, lazy);
-            if lazy {
+        Atom::DefUnparsed(ident, mut expr, function) => {
+            if function { expr = format!("[ {} ]", expr); }
+            let mut result_of_expr = eval_with_new_scope(&expr, env);
+            if function {
                 if let Atom::Quotation(q, false) = result_of_expr {
                     result_of_expr = Atom::Quotation(q, true);
                 } else {
@@ -136,8 +137,8 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
     }
 }
 
-pub fn eval_with_new_scope(expr: &String, env: &mut Env, lazy: bool) -> Atom {
-    env.push_blank(lazy);
+pub fn eval_with_new_scope(expr: &String, env: &mut Env) -> Atom {
+    env.push_blank(false);
     eval_line(&expr, env);
     let mut stack : Stack = env.pop().unwrap().0;
     if let Some(atom) = stack.pop() {

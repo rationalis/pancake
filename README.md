@@ -74,9 +74,10 @@ performance, safety. These are outside of my interest for a new hobby language.
 - [ ] Logic / Booleans
   - [ ] Booleans: `true` `false` `and` `or` `not`
   - [ ] Comparators: `<` `>` `=` `<=` `>=`
-  - [ ] `A B C cond` where `C` is boolean, `A` and `B` are quotations, is
-        semantically "if C then eval A else eval B".
-        - [ ] `A B if` where `B` is boolean, is semantically `if B then eval A`.
+  - [ ] `A B C cond` where `A` is boolean, `B` and `C` are quotations, is
+        semantically "if A then eval B else eval C".
+        - [ ] `A B if` where `B` is boolean, is semantically "if A then eval B".
+        - Both of these consume the boolean before evaluating quotations.
 
 - [ ] Composite Types
   - [ ] Lists
@@ -86,6 +87,7 @@ performance, safety. These are outside of my interest for a new hobby language.
     - [ ] `map` `fold` `reduce`
     - [ ] Indexing via `.` e.g. `.0`, `.a`
     - [ ] Boolean list convenience functions: `any` `all`
+    - [ ] Ranges
   - [ ] Dictionaries
     - [ ] `[ a b c d ] dict` evaluates `a b c d`; if these are 4 atoms, then the
           result is a dictionary containing `(a,b),(c,d)`
@@ -111,5 +113,5 @@ performance, safety. These are outside of my interest for a new hobby language.
   - [ ] Use macros to generalize a bunch of repetitive code
   - [ ] Add transaction logging to Env to facilitate easier debugging
   - [ ] Loops/Iteration (of some kind)
-  - [ ] Comments
+  - [ ] Comment syntax
   - [ ] I/O that isn't just printing the whole state (maybe `print`?)
