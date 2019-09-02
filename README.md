@@ -105,6 +105,7 @@ performance, safety. These are outside of my interest for a new hobby language.
 - Misc
   - [ ] Write some tests so I don't have to manually check things every time
   - [ ] Write some docs that are more organized than this haphazard roadmap
+  - [ ] Add transaction logging to Env to facilitate easier debugging
   - [ ] Loops/Iteration (of some kind)
   - [ ] Multiline definitions for functions / variables
   - [ ] Comments

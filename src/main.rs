@@ -14,6 +14,8 @@ pub(crate) mod types {
     pub const SPECIAL_IDENTS : [&'static str;1] = ["call"];
 
     pub type NumType = i32;
+    pub type Identifier = String;
+    pub type UnparsedExpr = String;
     pub type IsFunction = bool;
 
     pub type Stack = Vec<Atom>;
@@ -26,10 +28,9 @@ pub(crate) mod types {
         QuotationStart, // [
         QuotationEnd, // ]
         Quotation(Vec<Atom>, IsFunction),
+        Def(Identifier, UnparsedExpr, IsFunction),
         Call,
-        Let,
-        Defn,
-        Plain(String)
+        Plain(Identifier)
     }
 
     #[derive(Debug)]
@@ -98,18 +99,6 @@ pub(crate) mod types {
                 }
             }
             None
-        }
-
-        pub fn eval_with_new_scope(&mut self, expr: &String, lazy: bool)
-                                   -> Atom {
-            self.push_blank(lazy);
-            crate::eval::eval_line(&expr, self);
-            let mut stack : Stack = self.pop().unwrap().0;
-            if let Some(atom) = stack.pop() {
-                return atom;
-            } else {
-                panic!("Expected result but stack was empty.");
-            }
         }
 
         pub fn lazy_mode(&self) -> bool {

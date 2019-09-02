@@ -1,7 +1,7 @@
 use regex::Regex;
 use crate::types::{ARITHMETIC_OPS, NumType, Atom, Stack, Env};
 
-pub fn eval_token(token: &str) -> Option<Atom> {
+pub fn parse_token(token: &str) -> Option<Atom> {
     if let Ok(num) = token.parse::<NumType>() {
         return Some(Atom::Num(num));
     }
@@ -41,6 +41,9 @@ pub fn eval_binary_op<F>(op: F, env: &mut Env) where
 /// Take an Atom and evaluate its effect on the stack. For basic primitives,
 /// this simply pushes them onto the stack.
 pub fn eval_atom(atom: Atom, env: &mut Env) {
+    // Currently Atom::QuotationStart enters lazy mode and Atom::QuotationEnd
+    // closes it. If/when it gets more complex there should be a more complex
+    // guard here.
     if env.lazy_mode() && atom != Atom::QuotationEnd {
         env.push_atom(atom);
         return;
@@ -70,6 +73,18 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
             env.push_atom(Atom::Quotation(q, true));
             eval_atom(Atom::Call, env);
         },
+        Atom::Def(ident, mut expr, lazy) => {
+            if lazy { expr = format!("[ {} ]", expr); }
+            let mut result_of_expr = eval_with_new_scope(&expr, env, lazy);
+            if lazy {
+                if let Atom::Quotation(q, false) = result_of_expr {
+                    result_of_expr = Atom::Quotation(q, true);
+                } else {
+                    panic!("This should never happen.");
+                }
+            }
+            env.bind_var(ident, result_of_expr);
+        },
         Atom::Call => {
             if let Atom::Quotation(q, _) = env.pop_atom() {
                 for atom in q {
@@ -95,7 +110,19 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
     }
 }
 
-pub fn eval_def(line: &String, env: &mut Env) -> bool {
+pub fn eval_with_new_scope(expr: &String, env: &mut Env, lazy: bool) -> Atom {
+    env.push_blank(lazy);
+    eval_line(&expr, env);
+    let mut stack : Stack = env.pop().unwrap().0;
+    if let Some(atom) = stack.pop() {
+        return atom;
+    } else {
+        panic!("Expected result but stack was empty.");
+    }
+}
+
+/// Parse a line definition of a variable like `let a = 100` or `fn inc = 1 +`.
+pub fn parse_def(line: &String) -> Option<Atom> {
     lazy_static! {
         static ref RE: Regex =
             Regex::new(
@@ -106,32 +133,23 @@ pub fn eval_def(line: &String, env: &mut Env) -> bool {
         // TODO: handle forbidden identifiers
         let decl = caps["decl"].to_string();
         let ident = caps["ident"].to_string();
-        let mut expr = caps["expr"].to_string();
+        let expr = caps["expr"].to_string();
 
-        let lazy = decl == "fn";
-        if lazy { expr = format!("[ {} ]", expr); }
-        let mut result_of_expr = env.eval_with_new_scope(&expr, lazy);
-        if lazy {
-            if let Atom::Quotation(q, false) = result_of_expr {
-                result_of_expr = Atom::Quotation(q, true);
-            } else {
-                panic!("This should never happen.");
-            }
-        }
-        env.bind_var(ident, result_of_expr);
-
-        true
-    } else { false }
+        return Some(Atom::Def(ident, expr, decl == "fn"));
+    }
+    None
 }
 
 pub fn eval_line(line: &String, env: &mut Env) {
-    if eval_def(line, env) {
+    // Special handler for def syntax sugar
+    if let Some(def_atom) = parse_def(line) {
+        eval_atom(def_atom, env);
         return;
     }
 
     let iter = line.split_ascii_whitespace();
     for token in iter {
-        if let Some(atom) = eval_token(token) {
+        if let Some(atom) = parse_token(token) {
             eval_atom(atom, env);
         } else {
             panic!("Unrecognized token.");
