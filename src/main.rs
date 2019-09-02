@@ -25,7 +25,6 @@ pub(crate) mod types {
         ArithmeticOp(char),
         QuotationStart, // [
         QuotationEnd, // ]
-        FunctionEnd, // implicit ]
         Quotation(Vec<Atom>, IsFunction),
         Plain(String)
     }
@@ -65,6 +64,10 @@ pub(crate) mod types {
             }
         }
 
+        pub fn push_atom(&mut self, atom: Atom) {
+            self.last_frame().0.push(atom)
+        }
+
         pub fn push_blank(&mut self, lazy: bool) {
             let frame = (Stack::new(), Context::new(), lazy);
             self.0.push(frame)
@@ -88,7 +91,8 @@ pub(crate) mod types {
             None
         }
 
-        pub fn eval_with_new_scope(&mut self, expr: &String) -> Atom {
+        pub fn eval_with_new_scope(&mut self, expr: &String, lazy: bool)
+                                   -> Atom {
             self.push_blank(false);
             crate::eval::eval_line(&expr, self);
             let mut stack : Stack = self.pop().unwrap().0;

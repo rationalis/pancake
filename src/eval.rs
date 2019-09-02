@@ -37,67 +37,84 @@ pub fn eval_binary_op<F>(op: F, stack: &mut Stack) where
 /// Take an Atom and evaluate its effect on the stack. For basic primitives,
 /// this simply pushes them onto the stack.
 pub fn eval_atom(atom: Atom, env: &mut Env) {
-    let mut to_push : Option<Atom> = None;
     if env.lazy_mode() && atom != Atom::QuotationEnd {
-        to_push = Some(atom);
-    } else {
-        match atom {
-            Atom::ArithmeticOp(c) => {
-                let ref mut stack = env.last_frame().0;
-                match c {
-                    '+' => eval_binary_op(|a,b| a+b, stack),
-                    '-' => eval_binary_op(|a,b| a-b, stack),
-                    '*' => eval_binary_op(|a,b| a*b, stack),
-                    '/' => eval_binary_op(|a,b| a/b, stack),
-                    '%' => eval_binary_op(|a,b| a%b, stack),
-                    _ => ()
+        env.push_atom(atom);
+        return;
+    } 
+
+    let mut to_push : Option<Atom> = None;
+    match atom {
+        Atom::ArithmeticOp(c) => {
+            let ref mut stack = env.last_frame().0;
+            match c {
+                '+' => eval_binary_op(|a,b| a+b, stack),
+                '-' => eval_binary_op(|a,b| a-b, stack),
+                '*' => eval_binary_op(|a,b| a*b, stack),
+                '/' => eval_binary_op(|a,b| a/b, stack),
+                '%' => eval_binary_op(|a,b| a%b, stack),
+                _ => ()
+            }
+        },
+        Atom::QuotationStart => {
+            env.push_blank(true);
+        },
+        Atom::QuotationEnd => {
+            let stack: Stack = env.pop().unwrap().0;
+            let quotation = Atom::Quotation(stack, false);
+            to_push = Some(quotation);
+        },
+        Atom::Quotation(q, true) => {
+            env.push_atom(Atom::Quotation(q, true));
+            eval_atom(Atom::Plain("call".to_string()), env);
+        },
+        Atom::Plain(ref ident) if ident == "call" => {
+            if let Some(Atom::Quotation(q, _)) = env.last_frame().0.pop() {
+                for atom in q {
+                    eval_atom(atom, env);
                 }
-            },
-            Atom::QuotationStart => {
-                env.push_blank(true);
-            },
-            Atom::QuotationEnd => {
-                let stack: Stack = env.pop().unwrap().0;
-                let quotation = Atom::Quotation(stack, false);
-                to_push = Some(quotation);
-            },
-            Atom::Plain(ref ident) if ident == "call" => {
-                if let Some(Atom::Quotation(quoted_stack, _)) =
-                    env.last_frame().0.pop()
-                {
-                    for atom in quoted_stack { eval_atom(atom, env); }
-                } else {
-                    panic!("Tried to call a non-quotation / nothing.");
-                }
-            },
-            Atom::Plain(ident) => {
-                if let Some(atom) = env.find_var(&ident) {
-                    to_push = Some(atom);
-                } else {
-                    panic!("Unrecognized identifier: {}", ident);
-                };
-            },
-            _ => { to_push = Some(atom); }
-        }
+            } else {
+                panic!("Tried to call a non-quotation / nothing.");
+            }
+        },
+        Atom::Plain(ident) => {
+            match env.find_var(&ident) {
+                Some(Atom::Quotation(q, true)) =>
+                    eval_atom(Atom::Quotation(q, true), env),
+                Some(atom) => to_push = Some(atom),
+                _ => panic!("Unrecognized identifier: {}", ident)
+            }
+        },
+        _ => { to_push = Some(atom); }
     }
 
     if let Some(atom) = to_push {
-        let ref mut stack = env.last_frame().0;
-        stack.push(atom);
+        env.push_atom(atom)
     }
 }
 
-pub fn eval_let(line: &String, env: &mut Env) -> bool {
+pub fn eval_def(line: &String, env: &mut Env) -> bool {
     lazy_static! {
         static ref RE: Regex =
-            Regex::new("let (?P<ident>[a-z]+?) = (?P<expr>.*)").unwrap();
+            Regex::new(
+                r"^(?P<decl>let|fn) (?P<ident>[a-z]+?) = (?P<expr>.*)").unwrap();
     }
     let captures = RE.captures(line);
     if let Some(caps) = captures {
         // TODO: handle forbidden identifiers
+        let decl = caps["decl"].to_string();
         let ident = caps["ident"].to_string();
-        let expr = caps["expr"].to_string();
-        let result_of_expr = env.eval_with_new_scope(&expr);
+        let mut expr = caps["expr"].to_string();
+
+        let lazy = decl == "fn";
+        if lazy { expr = format!("[ {} ]", expr); }
+        let mut result_of_expr = env.eval_with_new_scope(&expr, lazy);
+        if lazy {
+            if let Atom::Quotation(q, false) = result_of_expr {
+                result_of_expr = Atom::Quotation(q, true);
+            } else {
+                panic!("This should never happen.");
+            }
+        }
         env.bind_var(ident, result_of_expr);
 
         true
@@ -105,7 +122,7 @@ pub fn eval_let(line: &String, env: &mut Env) -> bool {
 }
 
 pub fn eval_line(line: &String, env: &mut Env) {
-    if eval_let(line, env) {
+    if eval_def(line, env) {
         return;
     }
 

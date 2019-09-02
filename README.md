@@ -40,15 +40,15 @@ performance, safety. These are outside of my interest for a new hobby language.
     only useful for reuse of a value, *not* a mutable shared state.
 
 - [ ] Quotations / Functions
-  - [ ] Quotation: `[ 2 2 + ]`
+  - [x] Quotation: `[ 2 2 + ]`
   - [x] Add stack-of-stacks (-> lexical scoping)
-    - [ ] Allow nested quotations.
+    - [x] Allow nested quotations.
     - [ ] Default to eager capture but fall back to late binding for recursion.
   - `[` makes all non-identifier evaluation lazy; identifiers are eagerly
     captured if possible. `]` consumes up to the nearest `[` to construct the
     quotation.
-  - [ ] Implement `call`: evaluates the quotation on the top of the stack
-  - [ ] Function: `fn sq = 2 ^`
+  - [x] Implement `call`: evaluates the quotation on the top of the stack
+  - [x] Function: `fn sq = 2 ^`
     - Function definitions are implicit quotations. A function reference pushes
       the quotation then calls `call`.
     - Composition/currying for free, hopefully.
