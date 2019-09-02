@@ -20,6 +20,10 @@ semantics as a transformation of a single, global state, with actual changes
 restricted. However, in implementation, we just push and pop from a stack. Nice
 and simple.
 
+In fact, it's such a simple model that there's no real need for any complex
+parser - everything can be implemented from near-scratch. This allows for plenty
+of flexibility in determining syntax and semantics. The fun is in experimenting!
+
 On the other hand, there are plenty of explicit non-goals: compilation,
 performance, safety. These are outside of my interest for a new hobby language.
 
@@ -41,9 +45,12 @@ performance, safety. These are outside of my interest for a new hobby language.
 
 - [ ] Quotations / Functions
   - [x] Quotation: `[ 2 2 + ]`
-  - [x] Add stack-of-stacks (-> lexical scoping)
+  - [x] Add stack-of-stacks (-> lexical scoping w/ variable shadowing)
     - [x] Allow nested quotations.
-    - [ ] Default to eager capture but fall back to late binding for recursion.
+    - [ ] Default to eager capture but fall back to late binding (-> recursion).
+      - Caveat: This allows name collision in inner scopes which redefine a
+        variable.
+    - [ ] Allow lazy `let` and lazy `fn` (-> local functions).
   - `[` makes all non-identifier evaluation lazy; identifiers are eagerly
     captured if possible. `]` consumes up to the nearest `[` to construct the
     quotation.
@@ -55,7 +62,7 @@ performance, safety. These are outside of my interest for a new hobby language.
   - [ ] Can push the quotation definition without calling `apply`, e.g. `'fn`.
 
 - [ ] Logic / Booleans
-  - [ ] Booleans: `true` `false` `and` `or`
+  - [ ] Booleans: `true` `false` `and` `or` `not`
   - [ ] Comparators: `<` `>` `=` `<=` `>=`
   - [ ] `if A then B else C` where `A` is boolean, `B` and `C` are quotations
     - `if` and `then` are mandatory despite being purely aesthetic
@@ -68,9 +75,19 @@ performance, safety. These are outside of my interest for a new hobby language.
     - [ ] `map` `fold` `reduce`
     - [ ] Indexing via `.` e.g. `.0`, `.a`
     - [ ] Boolean list convenience functions: `any` `all`
-  - [ ] Maps
+  - [ ] Dictionaries
+    - [ ] `[ a b c d ] dict` evaluates `a b c d`; if these are 4 atoms, then the
+          result is a dictionary containing `(a,b),(c,d)`
+    - [ ] A `case` statement which can be used for switch-case, if/else-if, and
+          pattern matching.
+      - `case` takes a quotation:quotation dict, where the key quotations
+      evaluate to bools. It evaluates the conditions (sequentially) and
+      evaluates the first value quotation corresponding to a true condition
+      (short-circuiting).
+      - [ ] `multicase` which does not short-circuit. There are no guarantees
+            about evaluation order.
   
-- [ ] Basic operators
+- [ ] Operators
   - [ ] `let` form which is not on its own line, `1 'a let'` = `^let a = 1`
   - [ ] `dup` `swap` `drop` etc. 
   - [ ] Function concatenation operator. See [TODO: find the
