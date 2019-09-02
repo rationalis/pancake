@@ -17,6 +17,10 @@ pub fn eval_token(token: &str) -> Option<Atom> {
         }
     }
 
+    if token == "call" {
+        return Some(Atom::Call);
+    }
+
     Some(Atom::Plain(token.to_string()))
 }
 
@@ -65,9 +69,9 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
         },
         Atom::Quotation(q, true) => {
             env.push_atom(Atom::Quotation(q, true));
-            eval_atom(Atom::Plain("call".to_string()), env);
+            eval_atom(Atom::Call, env);
         },
-        Atom::Plain(ref ident) if ident == "call" => {
+        Atom::Call => {
             if let Some(Atom::Quotation(q, _)) = env.last_frame().0.pop() {
                 for atom in q {
                     eval_atom(atom, env);

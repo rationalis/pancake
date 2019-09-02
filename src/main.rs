@@ -27,6 +27,8 @@ pub(crate) mod types {
         QuotationEnd, // ]
         Quotation(Vec<Atom>, IsFunction),
         Call,
+        Let,
+        Defn,
         Plain(String)
     }
 
@@ -68,7 +70,6 @@ pub(crate) mod types {
         // TODO: Add fns last_atom, pop_atom
 
         pub fn push_atom(&mut self, atom: Atom) {
-            // TODO: Handle eager quotations here.
             self.last_frame().0.push(atom)
         }
 

@@ -27,6 +27,14 @@ of flexibility in determining syntax and semantics. The fun is in experimenting!
 On the other hand, there are plenty of explicit non-goals: compilation,
 performance, safety. These are outside of my interest for a new hobby language.
 
+## Work Queue
+
+- Finish up `fn`: eager/lazy bindings, which will allow recursion and local
+  variables/functions.
+- Write some docstrings with test examples.
+- Write some basic integration tests. (Unit tests to be postponed until the
+  relevant set of 'units' are stable.)
+
 ## Roadmap
 
 - [x] Basic integer arithmetic in a REPL (+,-,*,/)
@@ -64,8 +72,9 @@ performance, safety. These are outside of my interest for a new hobby language.
 - [ ] Logic / Booleans
   - [ ] Booleans: `true` `false` `and` `or` `not`
   - [ ] Comparators: `<` `>` `=` `<=` `>=`
-  - [ ] `if A then B else C` where `A` is boolean, `B` and `C` are quotations
-    - `if` and `then` are mandatory despite being purely aesthetic
+  - [ ] `A B C cond` where `C` is boolean, `A` and `B` are quotations, is
+        semantically "if C then eval A else eval B".
+        - [ ] `A B if` where `B` is boolean, is semantically `if B then eval A`.
 
 - [ ] Composite Types
   - [ ] Lists
