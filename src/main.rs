@@ -59,7 +59,7 @@ pub(crate) mod types {
             Env(vec![(Stack::new(), Context::new(), false)])
         }
 
-        pub fn last_frame(&mut self) -> &mut Frame {
+        fn last_frame(&mut self) -> &mut Frame {
             if let Some(frame) = self.0.last_mut() {
                 return frame;
             } else {
@@ -71,6 +71,10 @@ pub(crate) mod types {
 
         pub fn push_atom(&mut self, atom: Atom) {
             self.last_frame().0.push(atom)
+        }
+
+        pub fn pop_atom(&mut self) -> Atom {
+            self.last_frame().0.pop().unwrap()
         }
 
         pub fn push_blank(&mut self, lazy: bool) {
@@ -98,7 +102,7 @@ pub(crate) mod types {
 
         pub fn eval_with_new_scope(&mut self, expr: &String, lazy: bool)
                                    -> Atom {
-            self.push_blank(false);
+            self.push_blank(lazy);
             crate::eval::eval_line(&expr, self);
             let mut stack : Stack = self.pop().unwrap().0;
             if let Some(atom) = stack.pop() {

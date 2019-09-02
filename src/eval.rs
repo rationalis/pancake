@@ -26,13 +26,13 @@ pub fn eval_token(token: &str) -> Option<Atom> {
 
 // TODO: Generalize arity and types using macro (generics are not enough)
 // TODO: Gracefully handle insufficient arguments
-pub fn eval_binary_op<F>(op: F, stack: &mut Stack) where
+pub fn eval_binary_op<F>(op: F, env: &mut Env) where
     F: Fn(NumType, NumType) -> NumType {
 
-    let b = stack.pop();
-    let a = stack.pop();
-    if let (Some(Atom::Num(num_a)), Some(Atom::Num(num_b))) = (a,b) {
-        stack.push(Atom::Num(op(num_a, num_b)));
+    let b = env.pop_atom();
+    let a = env.pop_atom();
+    if let (Atom::Num(num_a), Atom::Num(num_b)) = (a,b) {
+        env.push_atom(Atom::Num(op(num_a, num_b)));
     } else {
         panic!("Insufficient arguments for operation.");
     };
@@ -49,13 +49,12 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
     let mut to_push : Option<Atom> = None;
     match atom {
         Atom::ArithmeticOp(c) => {
-            let ref mut stack = env.last_frame().0;
             match c {
-                '+' => eval_binary_op(|a,b| a+b, stack),
-                '-' => eval_binary_op(|a,b| a-b, stack),
-                '*' => eval_binary_op(|a,b| a*b, stack),
-                '/' => eval_binary_op(|a,b| a/b, stack),
-                '%' => eval_binary_op(|a,b| a%b, stack),
+                '+' => eval_binary_op(|a,b| a+b, env),
+                '-' => eval_binary_op(|a,b| a-b, env),
+                '*' => eval_binary_op(|a,b| a*b, env),
+                '/' => eval_binary_op(|a,b| a/b, env),
+                '%' => eval_binary_op(|a,b| a%b, env),
                 _ => ()
             }
         },
@@ -72,12 +71,12 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
             eval_atom(Atom::Call, env);
         },
         Atom::Call => {
-            if let Some(Atom::Quotation(q, _)) = env.last_frame().0.pop() {
+            if let Atom::Quotation(q, _) = env.pop_atom() {
                 for atom in q {
                     eval_atom(atom, env);
                 }
             } else {
-                panic!("Tried to call a non-quotation / nothing.");
+                panic!("Tried to call a non-quotation.");
             }
         },
         Atom::Plain(ident) => {
