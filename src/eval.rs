@@ -168,6 +168,11 @@ pub fn parse_def(line: &String) -> Option<Atom> {
 }
 
 pub fn eval_line(line: &String, env: &mut Env) {
+    // Early exit for comments
+    if let Some('#') = line.chars().next() {
+        return;
+    }
+
     // Special handler for def syntax sugar
     if let Some(def_atom) = parse_def(line) {
         eval_atom(def_atom, env);

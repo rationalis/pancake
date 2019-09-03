@@ -30,9 +30,8 @@ performance, safety. These are outside of my interest for a new hobby language.
 ## Work Queue
 
 - Write some docstrings with test examples.
-- Write some basic integration tests. (Unit tests to be postponed until the
-  relevant set of 'units' are stable.)
 - Check for forbidden identifiers on definitions.
+- Some booleans and ops (to allow nontrivial recursive functions)
 
 ## Roadmap
 
@@ -113,5 +112,5 @@ performance, safety. These are outside of my interest for a new hobby language.
   - [ ] Use macros to generalize a bunch of repetitive code
   - [ ] Add transaction logging to Env to facilitate easier debugging
   - [ ] Loops/Iteration (of some kind)
-  - [ ] Comment syntax
+  - [x] Comment syntax
   - [ ] I/O that isn't just printing the whole state (maybe `print`?)
