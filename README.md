@@ -31,7 +31,6 @@ performance, safety. These are outside of my interest for a new hobby language.
 
 - Write some docstrings with test examples.
 - Check for forbidden identifiers on definitions.
-- Some booleans and ops (to allow nontrivial recursive functions)
 
 ## Roadmap
 
@@ -68,11 +67,10 @@ performance, safety. These are outside of my interest for a new hobby language.
     - Function definitions are implicit quotations. A function reference pushes
       the quotation then calls `call`.
     - Composition/currying for free, hopefully.
-  - [ ] Can push the quotation definition without calling `apply`, e.g. `''fn`.
 
 - [ ] Logic / Booleans
   - [x] Booleans: `true` `false` `and` `or` `not`
-  - [ ] Comparators: `<` `>` `=` `<=` `>=`
+  - [x] Comparators: `<` `>` `=` `<=` `>=`
   - [x] `A B C cond` where `A` is boolean, `B` and `C` are quotations, is
         semantically "if A then eval B else eval C".
         - [ ] `A B if` where `B` is boolean, is semantically "if A then eval B".
@@ -102,15 +100,19 @@ performance, safety. These are outside of my interest for a new hobby language.
 - [ ] Operators
   - [x] `let` form which is not on its own line, `1 'a let'` = `^let a = 1`
   - [x] `fn` form "
-  - [ ] `dup` `swap` `drop` etc. 
+  - [x] `dup` `swap` `drop` etc. 
+    - Not exhaustively implemented.
   - [ ] Function concatenation operator. See [TODO: find the
         link](http://google.com). `2 2 3 3 +,+` = `2 2 + 3 3 +`
 
 - Misc
-  - [ ] Write some tests so I don't have to manually check things every time
+  - [x] Write some tests so I don't have to manually check things every time
   - [ ] Write some docs that are more organized than this haphazard roadmap
-  - [ ] Use macros to generalize a bunch of repetitive code
+  - [x] Use macros to generalize a bunch of repetitive code
+    - Do another pass to look for more excessive repetition, and try to
+      refactor, with macros or otherwise
   - [ ] Add transaction logging to Env to facilitate easier debugging
+  - [ ] Better pretty-print of Env/Stack/Context
   - [ ] Loops/Iteration (of some kind)
   - [x] Comment syntax
   - [ ] I/O that isn't just printing the whole state (maybe `print`?)
