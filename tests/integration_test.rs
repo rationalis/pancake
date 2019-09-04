@@ -53,21 +53,30 @@ fn basic_cond() {
 }
 
 #[test]
-fn using_variables() {
+fn variable_and_function_definition() {
     assert_prog_output(ntoa(vec![35]),
                        r"
 let a = 17
 let b = 18
 a b +
 ");
-}
-
-#[test]
-fn defining_functions() {
     assert_prog_output(ntoa(vec![3,7,6,8]),
                        r"
 fn inc = 1 +
 fn incinc = inc inc
+1 incinc 3 incinc incinc 4 inc inc 5 inc inc inc
+");
+}
+
+#[test]
+fn variable_and_function_definition2() {
+    assert_prog_output(ntoa(vec![35]),
+                       r"
+17 'a let 18 'b let a b +
+");
+    assert_prog_output(ntoa(vec![3,7,6,8]),
+                       r"
+[ 1 + ] 'inc fn [ inc inc ] 'incinc fn
 1 incinc 3 incinc incinc 4 inc inc 5 inc inc inc
 ");
 }

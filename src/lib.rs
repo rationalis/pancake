@@ -2,6 +2,7 @@
 
 pub mod eval;
 pub mod ops;
+pub mod parse;
 
 pub mod types {
     use std::collections::HashMap;
@@ -60,8 +61,18 @@ pub mod types {
         }
 
         fn insert(&mut self, ident: String, atom: Atom) {
+            let ident_c = ident.clone();
+            let ident_s = ident_c.as_str();
+
+            if SPECIAL_IDENTS.contains(&ident_s) ||
+                BOOLEAN_OPS.contains(&ident_s) ||
+                STACK_OPS.contains(&ident_s) {
+
+                panic!("Attempted to rebind reserved word {}.", ident_s);
+            }
+
             if let Some(_) = self.0.insert(ident, atom) {
-                panic!("Attempted to rebind existing variable.");
+                panic!("Attempted to rebind existing variable {}.", ident_c);
             }
         }
     }

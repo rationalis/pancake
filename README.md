@@ -30,7 +30,6 @@ performance, safety. These are outside of my interest for a new hobby language.
 ## Work Queue
 
 - Write some docstrings with test examples.
-- Check for forbidden identifiers on definitions.
 
 ## Roadmap
 
