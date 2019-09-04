@@ -1,29 +1,60 @@
-use pancake::types::{Env, Stack, Atom::Num};
+use pancake::types::{Atom, Atom::Bool, Atom::Num};
 use pancake::eval::eval_program;
 
-fn assert_prog_output(expected_nums: Vec<i32>, prog: &str) {
-    let expected_out: Stack = expected_nums.into_iter()
-        .map(|n| Num(n))
-        .collect();
+fn assert_prog_output(expected_out: Vec<Atom>, prog: &str) {
     let mut env = eval_program(prog.to_string());
     assert_eq!(expected_out, env.pop().unwrap().0)
 }
 
+fn ntoa(v: Vec<i32>) -> Vec<Atom> {
+    v.into_iter().map(|n| Num(n)).collect()
+}
+
+fn btoa(v: Vec<bool>) -> Vec<Atom> {
+    v.into_iter().map(|n| Bool(n)).collect()
+}
+
 #[test]
 fn one_plus_one() {
-    assert_prog_output(vec![2],
+    assert_prog_output(ntoa(vec![2]),
                        "1 1 +");
 }
 
 #[test]
 fn more_complicated_arithmetic() {
-    assert_prog_output(vec![18],
+    assert_prog_output(ntoa(vec![18]),
                        "1 2 + 3 * 4 * 2 /");
 }
 
 #[test]
+fn basic_boolean_logic() {
+    for &a in [true, false].iter() {
+        assert_prog_output(
+            vec![Bool(!a)],
+            format!("{} not", a).as_str()
+        );
+        for &b in [true, false].iter() {
+            assert_prog_output(
+                vec![Bool(a && b)],
+                format!("{} {} and", a, b).as_str()
+            );
+            assert_prog_output(
+                vec![Bool(a || b)],
+                format!("{} {} or", a, b).as_str()
+            );
+        }
+    }
+}
+
+#[test]
+fn basic_cond() {
+    assert_prog_output(ntoa(vec![2]),
+                       "false [ 3 3 + ] [ 1 1 + ] cond");
+}
+
+#[test]
 fn using_variables() {
-    assert_prog_output(vec![35],
+    assert_prog_output(ntoa(vec![35]),
                        r"
 let a = 17
 let b = 18
@@ -33,7 +64,7 @@ a b +
 
 #[test]
 fn defining_functions() {
-    assert_prog_output(vec![3,7,6,8],
+    assert_prog_output(ntoa(vec![3,7,6,8]),
                        r"
 fn inc = 1 +
 fn incinc = inc inc

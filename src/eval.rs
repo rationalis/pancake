@@ -1,5 +1,6 @@
 use regex::Regex;
-use crate::types::{ARITHMETIC_OPS, NumType, Atom, Stack, Env};
+use crate::ops;
+use crate::types::{ARITHMETIC_OPS, BOOLEAN_OPS, NumType, Atom, Stack, Env};
 
 pub fn parse_token(token: String) -> Option<Atom> {
     if let Ok(num) = token.parse::<NumType>() {
@@ -22,30 +23,18 @@ pub fn parse_token(token: String) -> Option<Atom> {
         return Some(Atom::Symbol(ident.to_string()));
     }
 
-    // TODO: Replace this with a lookup into a static HashMap.
-    if token == "call" {
-        return Some(Atom::Call);
-    } else if token == "let" {
-        return Some(Atom::DefOp(false));
-    } else if token == "fn" {
-        return Some(Atom::DefOp(true));
-    }
-
-    Some(Atom::Plain(token))
-}
-
-// TODO: Generalize arity and types using macro (generics are not enough)
-// TODO: Gracefully handle insufficient arguments
-pub fn eval_binary_op<F>(op: F, env: &mut Env) where
-    F: Fn(NumType, NumType) -> NumType {
-
-    let b = env.pop_atom();
-    let a = env.pop_atom();
-    if let (Atom::Num(num_a), Atom::Num(num_b)) = (a,b) {
-        env.push_atom(Atom::Num(op(num_a, num_b)));
-    } else {
-        panic!("Insufficient arguments for operation.");
+    let atom = match token.as_str() {
+        "call" => Atom::Call,
+        "let" => Atom::DefOp(false),
+        "fn" => Atom::DefOp(true),
+        "true" => Atom::Bool(true),
+        "false" => Atom::Bool(false),
+        "not" => Atom::NotOp,
+        s if BOOLEAN_OPS.contains(&s) => Atom::BooleanOp(s.to_string()),
+        _ => Atom::Plain(token)
     };
+
+    Some(atom)
 }
 
 /// Take an Atom and evaluate its effect on the stack. For basic primitives,
@@ -62,13 +51,16 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
     let mut to_push : Option<Atom> = None;
     match atom {
         Atom::ArithmeticOp(c) => {
-            match c {
-                '+' => eval_binary_op(|a,b| a+b, env),
-                '-' => eval_binary_op(|a,b| a-b, env),
-                '*' => eval_binary_op(|a,b| a*b, env),
-                '/' => eval_binary_op(|a,b| a/b, env),
-                '%' => eval_binary_op(|a,b| a%b, env),
-                _ => ()
+            ops::eval_arithmetic_op(c, env);
+        },
+        Atom::BooleanOp(s) => {
+            ops::eval_boolean_op(s, env)
+        },
+        Atom::NotOp => {
+            if let Atom::Bool(b) = env.pop_atom() {
+                env.push_atom(Atom::Bool(!b));
+            } else {
+                panic!("Tried to negate a non-boolean.")
             }
         },
         Atom::QuotationStart => {

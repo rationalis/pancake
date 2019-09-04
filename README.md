@@ -71,9 +71,9 @@ performance, safety. These are outside of my interest for a new hobby language.
   - [ ] Can push the quotation definition without calling `apply`, e.g. `''fn`.
 
 - [ ] Logic / Booleans
-  - [ ] Booleans: `true` `false` `and` `or` `not`
+  - [x] Booleans: `true` `false` `and` `or` `not`
   - [ ] Comparators: `<` `>` `=` `<=` `>=`
-  - [ ] `A B C cond` where `A` is boolean, `B` and `C` are quotations, is
+  - [x] `A B C cond` where `A` is boolean, `B` and `C` are quotations, is
         semantically "if A then eval B else eval C".
         - [ ] `A B if` where `B` is boolean, is semantically "if A then eval B".
         - Both of these consume the boolean before evaluating quotations.

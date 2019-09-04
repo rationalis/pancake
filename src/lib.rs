@@ -1,13 +1,17 @@
 #[macro_use] extern crate lazy_static;
 
 pub mod eval;
+pub mod ops;
 
 pub mod types {
     use std::collections::HashMap;
 
     pub const SPECIAL_CHARS : &str = "+-*/%[]'";
     pub const ARITHMETIC_OPS : &str = "+-*/%";
-    pub const SPECIAL_IDENTS : [&'static str;3] = ["call", "let", "fn"];
+    pub const BOOLEAN_OPS : [&'static str;4] = [
+        "and", "or", "cond", "if"];
+    pub const SPECIAL_IDENTS : [&'static str;10] = [
+        "call", "let", "fn", "true", "false", "not", "and", "or", "cond", "if"];
 
     pub type NumType = i32;
     pub type Identifier = String;
@@ -19,14 +23,22 @@ pub mod types {
 
     #[derive(Debug, Clone, Eq, PartialEq)]
     pub enum Atom {
+        Bool(bool),
         Num(NumType),
+
+        NotOp,
+        BooleanOp(String),
         ArithmeticOp(char),
+
         QuotationStart, // [
         QuotationEnd, // ]
         Quotation(Vec<Atom>, IsFunction),
+
         DefUnparsed(Identifier, UnparsedExpr, IsFunction),
         DefOp(IsFunction),
+
         Call,
+
         Symbol(Identifier),
         Plain(Identifier)
     }
