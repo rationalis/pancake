@@ -72,18 +72,14 @@ fn incinc = inc inc
 ");
 }
 
-/*
-TODO: dup, bools, cond
-
 #[test]
 fn recursive_fibonacci() {
-    assert_prog_output(vec![3,7,6,8],
+    assert_prog_output(ntoa(vec![1,1,2,3,5,8]),
                        r"
-fn fib = dup 2 <= [ 1 ] [ 1 - dup 1 - fib fib + ] cond
-1 fib 2 fib 3 fib 4 fib 5 fib
+fn fib = dup 2 <= [ drop 1 ] [ 1 - dup 1 - fib swap fib + ] cond
+1 fib 2 fib 3 fib 4 fib 5 fib 6 fib
 ");
 }
-*/
 
  
 /*

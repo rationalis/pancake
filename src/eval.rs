@@ -1,6 +1,7 @@
 use regex::Regex;
 use crate::ops;
-use crate::types::{ARITHMETIC_OPS, BOOLEAN_OPS, NumType, Atom, Stack, Env};
+use crate::types::{ARITHMETIC_OPS, BOOLEAN_OPS, STACK_OPS,
+                 NumType, Atom, Stack, Env};
 
 pub fn parse_token(token: String) -> Option<Atom> {
     if let Ok(num) = token.parse::<NumType>() {
@@ -8,9 +9,6 @@ pub fn parse_token(token: String) -> Option<Atom> {
     }
 
     if let Ok(c) = token.parse::<char>() {
-        if ARITHMETIC_OPS.contains(c) {
-            return Some(Atom::ArithmeticOp(c));
-        }
         match c {
             '[' => return Some(Atom::QuotationStart),
             ']' => return Some(Atom::QuotationEnd),
@@ -30,7 +28,9 @@ pub fn parse_token(token: String) -> Option<Atom> {
         "true" => Atom::Bool(true),
         "false" => Atom::Bool(false),
         "not" => Atom::NotOp,
+        s if ARITHMETIC_OPS.contains(&s) => Atom::ArithmeticOp(s.to_string()),
         s if BOOLEAN_OPS.contains(&s) => Atom::BooleanOp(s.to_string()),
+        s if STACK_OPS.contains(&s) => Atom::StackOp(s.to_string()),
         _ => Atom::Plain(token)
     };
 
@@ -43,19 +43,19 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
     // Currently Atom::QuotationStart enters lazy mode and Atom::QuotationEnd
     // closes it. If/when it gets more complex there should be a more complex
     // guard here.
-    if env.lazy_mode() && atom != Atom::QuotationEnd {
+    if env.lazy_mode()
+        && atom != Atom::QuotationStart
+        && atom != Atom::QuotationEnd {
+
         env.push_atom(atom);
         return;
     } 
 
-    let mut to_push : Option<Atom> = None;
+    let mut to_push: Option<Atom> = None;
     match atom {
-        Atom::ArithmeticOp(c) => {
-            ops::eval_arithmetic_op(c, env);
-        },
-        Atom::BooleanOp(s) => {
-            ops::eval_boolean_op(s, env)
-        },
+        Atom::ArithmeticOp(c) => ops::eval_arithmetic_op(c, env),
+        Atom::BooleanOp(s) => ops::eval_boolean_op(s, env),
+        Atom::StackOp(s) => ops::eval_stack_op(s, env),
         Atom::NotOp => {
             if let Atom::Bool(b) = env.pop_atom() {
                 env.push_atom(Atom::Bool(!b));

@@ -13,15 +13,31 @@ macro_rules! eval_op {
             };
         }
     };
+    ( $op:tt, $wrap:path, $wrap2:path, $env:ident ) => {
+        {
+            let b = $env.pop_atom();
+            let a = $env.pop_atom();
+            if let ($wrap(unwrapped_a), $wrap(unwrapped_b)) = (a,b) {
+                $env.push_atom($wrap2(unwrapped_a $op unwrapped_b));
+            } else {
+                panic!("Wrong number or types of arguments for operation.");
+            };
+        }
+    };
 }
 
-pub fn eval_arithmetic_op(c: char, env: &mut Env) {
-    match c {
-        '+' => eval_op!(+, Atom::Num, env),
-        '-' => eval_op!(-, Atom::Num, env),
-        '*' => eval_op!(*, Atom::Num, env),
-        '/' => eval_op!(/, Atom::Num, env),
-        '%' => eval_op!(%, Atom::Num, env),
+pub fn eval_arithmetic_op(s: String, env: &mut Env) {
+    match s.as_str() {
+        "+" => eval_op!(+, Atom::Num, env),
+        "-" => eval_op!(-, Atom::Num, env),
+        "*" => eval_op!(*, Atom::Num, env),
+        "/" => eval_op!(/, Atom::Num, env),
+        "%" => eval_op!(%, Atom::Num, env),
+        "<" => eval_op!(<, Atom::Num, Atom::Bool, env),
+        ">" => eval_op!(>, Atom::Num, Atom::Bool, env),
+        "<=" => eval_op!(<=, Atom::Num, Atom::Bool, env),
+        ">=" => eval_op!(>=, Atom::Num, Atom::Bool, env),
+        "=" => eval_op!(==, Atom::Num, Atom::Bool, env),
         _ => panic!("This should never happen.")
     }
 }
@@ -44,6 +60,24 @@ pub fn eval_boolean_op(op: String, env: &mut Env) {
                 }
             }
         },
-        _ => ()
+        _ => panic!("This should never happen.")
+    }
+}
+
+pub fn eval_stack_op(op: String, env: &mut Env) {
+    match op.as_str() {
+        "dup" => {
+            let a = env.pop_atom();
+            env.push_atom(a.clone());
+            env.push_atom(a);
+        },
+        "drop" => { env.pop_atom(); },
+        "swap" => {
+            let a = env.pop_atom();
+            let b = env.pop_atom();
+            env.push_atom(a);
+            env.push_atom(b);
+        },
+        _ => panic!("This should never happen.")
     }
 }

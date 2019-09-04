@@ -7,11 +7,14 @@ pub mod types {
     use std::collections::HashMap;
 
     pub const SPECIAL_CHARS : &str = "+-*/%[]'";
-    pub const ARITHMETIC_OPS : &str = "+-*/%";
+    pub const ARITHMETIC_OPS : [&'static str;10] = [
+        "+","-","*","/","%","<",">","<=",">=","="];
     pub const BOOLEAN_OPS : [&'static str;4] = [
         "and", "or", "cond", "if"];
-    pub const SPECIAL_IDENTS : [&'static str;10] = [
-        "call", "let", "fn", "true", "false", "not", "and", "or", "cond", "if"];
+    pub const STACK_OPS : [&'static str;3] = [
+        "dup", "drop", "swap"];
+    pub const SPECIAL_IDENTS : [&'static str;6] = [
+        "call", "let", "fn", "true", "false", "not"];
 
     pub type NumType = i32;
     pub type Identifier = String;
@@ -28,7 +31,8 @@ pub mod types {
 
         NotOp,
         BooleanOp(String),
-        ArithmeticOp(char),
+        ArithmeticOp(String),
+        StackOp(String),
 
         QuotationStart, // [
         QuotationEnd, // ]
@@ -85,7 +89,11 @@ pub mod types {
         }
 
         pub fn pop_atom(&mut self) -> Atom {
-            self.last_frame().0.pop().unwrap()
+            if let Some(a) = self.last_frame().0.pop() {
+                a
+            } else {
+                panic!("Popped atom from empty frame");
+            }
         }
 
         pub fn push_blank(&mut self, lazy: bool) {
