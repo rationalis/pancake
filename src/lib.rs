@@ -37,7 +37,8 @@ pub mod types {
 
         QuotationStart, // [
         QuotationEnd, // ]
-        Quotation(Vec<Atom>, IsFunction),
+        Quotation(Vec<Atom>),
+        Function(Vec<Identifier>, Vec<Atom>),
 
         DefUnparsed(Identifier, UnparsedExpr, IsFunction),
         DefOp(IsFunction),

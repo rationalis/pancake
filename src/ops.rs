@@ -50,13 +50,13 @@ pub fn eval_boolean_op(op: String, env: &mut Env) {
             let else_branch = env.pop_atom();
             let if_branch = env.pop_atom();
             let condition = env.pop_atom();
-            if let (Atom::Quotation(else_q, _),
-                    Atom::Quotation(if_q, _),
+            if let (Atom::Quotation(else_q),
+                    Atom::Quotation(if_q),
                     Atom::Bool(cond)) = (else_branch, if_branch, condition) {
                 if cond {
-                    eval_atom(Atom::Quotation(if_q, true), env);
+                    eval_atom(Atom::Function(Vec::new(), if_q), env);
                 } else {
-                    eval_atom(Atom::Quotation(else_q, true), env);
+                    eval_atom(Atom::Function(Vec::new(), else_q), env);
                 }
             }
         },

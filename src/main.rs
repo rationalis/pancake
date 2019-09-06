@@ -13,6 +13,6 @@ fn main() {
 
         eval_line(&line, &mut env);
 
-        println!("Env: {:?}", env);
+        println!("Env: {:#?}", env);
     }
 }
