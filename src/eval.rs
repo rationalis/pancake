@@ -119,11 +119,7 @@ pub fn eval_line(line: &String, env: &mut Env) {
 
     let iter = line.split_ascii_whitespace();
     for token in iter {
-        if let Some(atom) = parse_token(token.to_string()) {
-            eval_atom(atom, env);
-        } else {
-            panic!("Unrecognized token.");
-        };
+        eval_atom(parse_token(token.to_string()), env);
     }
 }
 
