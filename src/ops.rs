@@ -26,8 +26,8 @@ macro_rules! eval_op {
     };
 }
 
-pub fn eval_arithmetic_op(s: String, env: &mut Env) {
-    match s.as_str() {
+pub fn eval_arithmetic_op(s: &str, env: &mut Env) {
+    match s {
         "+" => eval_op!(+, Atom::Num, env),
         "-" => eval_op!(-, Atom::Num, env),
         "*" => eval_op!(*, Atom::Num, env),
@@ -42,8 +42,8 @@ pub fn eval_arithmetic_op(s: String, env: &mut Env) {
     }
 }
 
-pub fn eval_boolean_op(op: String, env: &mut Env) {
-    match op.as_str() {
+pub fn eval_boolean_op(op: &str, env: &mut Env) {
+    match op {
         "and" => eval_op!(&&, Atom::Bool, env),
         "or" => eval_op!(||, Atom::Bool, env),
         "cond" => {
@@ -64,8 +64,8 @@ pub fn eval_boolean_op(op: String, env: &mut Env) {
     }
 }
 
-pub fn eval_stack_op(op: String, env: &mut Env) {
-    match op.as_str() {
+pub fn eval_stack_op(op: &str, env: &mut Env) {
+    match op {
         "dup" => {
             let a = env.pop_atom();
             env.push_atom(a.clone());

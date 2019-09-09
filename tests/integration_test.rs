@@ -2,7 +2,7 @@ use pancake::types::{Atom, Atom::Bool, Atom::Num};
 use pancake::eval::eval_program;
 
 fn assert_prog_output(expected_out: Vec<Atom>, prog: &str) {
-    let mut env = eval_program(prog.to_string());
+    let mut env = eval_program(prog);
     assert_eq!(expected_out, env.pop().unwrap().stack)
 }
 

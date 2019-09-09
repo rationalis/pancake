@@ -18,6 +18,7 @@ pub mod types {
         "call", "let", "fn", "true", "false", "not"];
 
     pub type NumType = i32;
+    pub type SpecialIdentifier = &'static str;
     pub type Identifier = String;
     pub type UnparsedExpr = String;
     pub type IsFunction = bool;
@@ -32,9 +33,9 @@ pub mod types {
         List(Vec<Atom>),
 
         NotOp,
-        BooleanOp(String),
-        ArithmeticOp(String),
-        StackOp(String),
+        BooleanOp(SpecialIdentifier),
+        ArithmeticOp(SpecialIdentifier),
+        StackOp(SpecialIdentifier),
 
         QuotationStart, // [
         QuotationEnd, // ]
@@ -59,7 +60,7 @@ pub mod types {
             Context(HashMap::new())
         }
 
-        fn get(&self, ident: &String) -> Option<&Atom> {
+        fn get(&self, ident: &str) -> Option<&Atom> {
             self.0.get(ident)
         }
 

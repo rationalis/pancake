@@ -25,9 +25,11 @@ fn parse_num_nom_(token: &str) -> IResult<&str, Atom> {
 }
 
 fn parse_op_(token: &str) -> Atom {
-    match token {
-        s if ARITHMETIC_OPS.contains(&s) => Atom::ArithmeticOp(s.to_string()),
-        _ => unreachable!()
+    let f = |e: &&&str| *e == &token;
+    if let Some(op) = ARITHMETIC_OPS.iter().find(f) {
+        Atom::ArithmeticOp(op)
+    } else {
+        panic!("Unrecognized operator '{}'", token);
     }
 }
 
@@ -40,9 +42,16 @@ fn parse_special_ident_(token: &str) -> Option<Atom> {
             "true" => Atom::Bool(true),
             "false" => Atom::Bool(false),
             "not" => Atom::NotOp,
-            s if BOOLEAN_OPS.contains(&s) => Atom::BooleanOp(s.to_string()),
-            s if STACK_OPS.contains(&s) => Atom::StackOp(s.to_string()),
-            _ => {return None;}
+            s => {
+                let f = |e: &&&str| *e == &s;
+                if let Some(op) = BOOLEAN_OPS.iter().find(f) {
+                    Atom::BooleanOp(op)
+                } else if let Some(op) = STACK_OPS.iter().find(f) {
+                    Atom::StackOp(op)
+                } else {
+                    return None;
+                }
+            }
     })
 }
 
@@ -109,8 +118,8 @@ fn parse_token_nom_(token: &str) -> IResult<&str, Atom> {
     ) (token)
 }
 
-pub fn parse_token(token: String) -> Atom {
-    parse_token_nom_(token.as_str()).unwrap().1
+pub fn parse_token(token: &str) -> Atom {
+    parse_token_nom_(token).unwrap().1
 }
 
 /// Parse a line definition of a variable like `let a = 100` or `fn inc = 1 +`.

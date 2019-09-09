@@ -103,7 +103,7 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
     }
 }
 
-pub fn eval_with_new_scope(expr: &String, env: &mut Env) -> Atom {
+pub fn eval_with_new_scope(expr: &str, env: &mut Env) -> Atom {
     env.push_blank(false);
     eval_line(&expr, env);
     let mut stack : Stack = env.pop().unwrap().stack;
@@ -114,13 +114,13 @@ pub fn eval_with_new_scope(expr: &String, env: &mut Env) -> Atom {
     }
 }
 
-pub fn eval_line(line: &String, env: &mut Env) {
+pub fn eval_line(line: &str, env: &mut Env) {
     for atom in parse_line(line) {
         eval_atom(atom, env);
     }
 }
 
-pub fn eval_program(program: String) -> Env {
+pub fn eval_program(program: &str) -> Env {
     let mut env = Env::new();
     let lines = program.split('\n');
     for line in lines {

@@ -38,6 +38,7 @@ performance, safety. These are outside of my interest for a new hobby language.
   index, concat, format)
   - Uses of traits like Add requires changing macros
 - `print`
+- Replace `&str` arrays for built-in ops with proper enums
 
 ## Roadmap
 
