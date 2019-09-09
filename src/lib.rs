@@ -23,7 +23,6 @@ pub mod types {
     pub type IsFunction = bool;
 
     pub type Stack = Vec<Atom>;
-    pub type Frame = (Stack, Context, bool);
 
     #[derive(Debug, Clone, Eq, PartialEq)]
     pub enum Atom {
@@ -40,7 +39,8 @@ pub mod types {
         Quotation(Vec<Atom>),
         Function(Vec<Identifier>, Vec<Atom>),
 
-        DefUnparsed(Identifier, UnparsedExpr, IsFunction),
+        DefUnparsedVar(Identifier, UnparsedExpr),
+        DefUnparsedFn(Identifier, Vec<Identifier>, UnparsedExpr),
         DefOp(IsFunction),
 
         Call,
@@ -61,7 +61,7 @@ pub mod types {
             self.0.get(ident)
         }
 
-        fn insert(&mut self, ident: String, atom: Atom) {
+        fn insert(&mut self, ident: Identifier, atom: Atom) {
             let ident_c = ident.clone();
             let ident_s = ident_c.as_str();
 
@@ -76,6 +76,27 @@ pub mod types {
                 panic!("Attempted to rebind existing variable {}.", ident_c);
             }
         }
+
+        fn clear(&mut self) {
+            self.0.clear()
+        }
+    }
+
+    #[derive(Debug)]
+    pub struct Frame {
+        pub stack: Stack,
+        pub context: Context,
+        pub params: Context,
+        pub lazy: bool
+    }
+
+    fn blank_frame() -> Frame {
+        return Frame {
+            stack: Stack::new(),
+            context: Context::new(),
+            params: Context::new(),
+            lazy: false
+        };
     }
 
     #[derive(Debug)]
@@ -83,7 +104,7 @@ pub mod types {
 
     impl Env {
         pub fn new() -> Env {
-            Env(vec![(Stack::new(), Context::new(), false)])
+            Env(vec![blank_frame()])
         }
 
         fn last_frame(&mut self) -> &mut Frame {
@@ -97,11 +118,11 @@ pub mod types {
         // TODO: Add fns last_atom, pop_atom
 
         pub fn push_atom(&mut self, atom: Atom) {
-            self.last_frame().0.push(atom)
+            self.last_frame().stack.push(atom)
         }
 
         pub fn pop_atom(&mut self) -> Atom {
-            if let Some(a) = self.last_frame().0.pop() {
+            if let Some(a) = self.last_frame().stack.pop() {
                 a
             } else {
                 panic!("Popped atom from empty frame");
@@ -109,21 +130,41 @@ pub mod types {
         }
 
         pub fn push_blank(&mut self, lazy: bool) {
-            let frame = (Stack::new(), Context::new(), lazy);
-            self.0.push(frame)
+            let mut f = blank_frame();
+            f.lazy = lazy;
+            self.0.push(f)
         }
 
         pub fn pop(&mut self) -> Option<Frame> {
             self.0.pop()
         }
 
-        pub fn bind_var(&mut self, ident: String, atom: Atom) {
-            self.last_frame().1.insert(ident, atom)
+        pub fn bind_var(&mut self, ident: Identifier, atom: Atom) {
+            self.last_frame().context.insert(ident, atom)
         }
 
-        pub fn find_var(&mut self, ident: &String) -> Option<Atom> {
+        pub fn bind_params(&mut self, idents: Vec<Identifier>) {
+            let mut bound_params = Context::new();
+            for ident in idents.iter().rev() {
+                bound_params.insert(ident.to_string(), self.pop_atom())
+            }
+            self.push_blank(false);
+            self.last_frame().params = bound_params;
+        }
+
+        pub fn unbind_params(&mut self) {
+            let mut frame = self.pop().unwrap();
+            self.last_frame().stack.append(&mut frame.stack)
+        }
+
+        pub fn find_var(&mut self, ident: &Identifier) -> Option<Atom> {
+            if let Some(f) = self.0.last() {
+                if let Some(atom) = f.params.get(ident) {
+                    return Some(atom.clone());
+                }
+            }
             for frame in self.0.iter().rev() {
-                let context = &frame.1;
+                let context = &frame.context;
                 if let Some(atom) = context.get(ident) {
                     return Some(atom.clone());
                 }
@@ -132,7 +173,7 @@ pub mod types {
         }
 
         pub fn lazy_mode(&self) -> bool {
-            self.0.last().unwrap().2
+            self.0.last().unwrap().lazy
         }
     }
 }

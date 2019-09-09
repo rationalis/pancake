@@ -32,23 +32,32 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
             env.push_blank(true);
         },
         Atom::QuotationEnd => {
-            let stack: Stack = env.pop().unwrap().0;
+            let stack: Stack = env.pop().unwrap().stack;
             let quotation = Atom::Quotation(stack);
             to_push = Some(quotation);
         },
-        Atom::Function(_, body) => {
-            env.push_atom(Atom::Quotation(body));
-            eval_atom(Atom::Call, env);
+        Atom::Function(params, body) => {
+            if !params.is_empty() {
+                env.bind_params(params);
+                env.push_atom(Atom::Quotation(body));
+                eval_atom(Atom::Call, env);
+                env.unbind_params();
+            } else {
+                env.push_atom(Atom::Quotation(body));
+                eval_atom(Atom::Call, env);
+            }
         },
-        Atom::DefUnparsed(ident, mut expr, function) => {
-            if function { expr = format!("[ {} ]", expr); }
+        Atom::DefUnparsedVar(ident, expr) => {
+            let result_of_expr = eval_with_new_scope(&expr, env);
+            env.bind_var(ident, result_of_expr);
+        },
+        Atom::DefUnparsedFn(ident, params, mut expr,) => {
+            expr = format!("[ {} ]", expr);
             let mut result_of_expr = eval_with_new_scope(&expr, env);
-            if function {
-                if let Atom::Quotation(q) = result_of_expr {
-                    result_of_expr = Atom::Function(Vec::new(), q);
-                } else {
-                    panic!("This should never happen.");
-                }
+            if let Atom::Quotation(q) = result_of_expr {
+                result_of_expr = Atom::Function(params, q);
+            } else {
+                unreachable!();
             }
             env.bind_var(ident, result_of_expr);
         },
@@ -97,7 +106,7 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
 pub fn eval_with_new_scope(expr: &String, env: &mut Env) -> Atom {
     env.push_blank(false);
     eval_line(&expr, env);
-    let mut stack : Stack = env.pop().unwrap().0;
+    let mut stack : Stack = env.pop().unwrap().stack;
     if let Some(atom) = stack.pop() {
         return atom;
     } else {

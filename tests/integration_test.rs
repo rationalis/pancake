@@ -3,7 +3,7 @@ use pancake::eval::eval_program;
 
 fn assert_prog_output(expected_out: Vec<Atom>, prog: &str) {
     let mut env = eval_program(prog.to_string());
-    assert_eq!(expected_out, env.pop().unwrap().0)
+    assert_eq!(expected_out, env.pop().unwrap().stack)
 }
 
 fn ntoa(v: Vec<i32>) -> Vec<Atom> {
@@ -91,18 +91,28 @@ fn fib = dup 2 <= [ drop 1 ] [ 1 - dup 1 - fib swap fib + ] cond
 }
 
  
-/*
 #[test]
 fn recursive_iterative_fibonacci() {
-    assert_prog_output(vec![3,7,6,8],
+    assert_prog_output(ntoa(vec![1,1,2,3,5]),
                        r"
-fn fibn a b c = a 0 <= [ a 1 - c b c + fib ] [ c ] cond
+fn fibn a b c = a 0 > [ a 1 - c b c + fibn ] [ c ] cond
 fn fib = 2 - 1 1 fibn
 1 fib 2 fib 3 fib 4 fib 5 fib
 ");
-
 }
 
+#[test]
+fn simple_named_param_functions() {
+    assert_prog_output(ntoa(vec![1,2,3,4,5,5]),
+                       r"
+fn f a b c = a b c
+fn g a = a a
+fn h a b c = a b
+1 2 3 4 5 f f g f h g f f
+");
+}
+
+/*
 #[test]
 fn iterative_fibonacci() {
     assert_prog_output(vec![3,7,6,8],

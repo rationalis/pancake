@@ -136,7 +136,7 @@ fn parse_let(line: &str) -> Option<Atom> {
         let ident = caps["ident"].to_string();
         let expr = caps["expr"].to_string();
 
-        return Some(Atom::DefUnparsed(ident, expr, false));
+        return Some(Atom::DefUnparsedVar(ident, expr));
     }
     None
 
@@ -159,8 +159,15 @@ fn parse_fn(line: &str) -> Option<Atom> {
         let _: Vec<Atom> = v;
         if let Atom::Plain(ident) = &v[0] {
             let expr = s;
-            return Some(Atom::DefUnparsed(ident.to_string(),
-                                         expr.to_string(), true));
+            return Some(Atom::DefUnparsedFn(
+                ident.to_string(),
+                v.split_at(1).1.iter().map(
+                    |a| if let Atom::Plain(name) = a {
+                        name.clone()
+                    } else {
+                        unreachable!()
+                    }).collect(),
+                expr.to_string()));
         }
     }
 

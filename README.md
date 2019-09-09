@@ -66,6 +66,7 @@ performance, safety. These are outside of my interest for a new hobby language.
     - Function definitions are implicit quotations. A function reference pushes
       the quotation then calls `call`.
     - Composition/currying for free, hopefully.
+  - [x] Named parameters: `fn f a b c = a` = `drop drop`
 
 - [ ] Logic / Booleans
   - [x] Booleans: `true` `false` `and` `or` `not`
