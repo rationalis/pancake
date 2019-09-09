@@ -112,6 +112,16 @@ fn h a b c = a b
 ");
 }
 
+#[test]
+fn whitespace_insensitive() {
+    assert_prog_output(ntoa(vec![2,4,6,8]),
+                       r"
+[1 1 +] call
+[ 2 2 + ] call
+[4 4 +][3 3 +] call swap call
+");
+}
+
 /*
 #[test]
 fn iterative_fibonacci() {

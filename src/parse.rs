@@ -8,7 +8,7 @@ use nom::{
     character::complete::*,
     character::complete::char as nomchar,
     combinator::{all_consuming, map, map_res, not, opt, recognize},
-    multi::{many1, separated_list},
+    multi::{many0, many1, separated_list},
     sequence::{delimited, preceded, terminated, tuple}
 };
 
@@ -186,7 +186,7 @@ pub fn parse_line(line: &str) -> Vec<Atom> {
     let parser =
         all_consuming(
             delimited(multispace0,
-                      separated_list(opt(multispace1), parse_token_nom_),
+                      many0(terminated(parse_token_nom_, opt(multispace1))),
                       multispace0));
 
     let result = parser(line);
