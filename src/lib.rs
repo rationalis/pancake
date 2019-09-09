@@ -29,6 +29,8 @@ pub mod types {
         Bool(bool),
         Num(NumType),
 
+        List(Vec<Atom>),
+
         NotOp,
         BooleanOp(String),
         ArithmeticOp(String),
@@ -75,10 +77,6 @@ pub mod types {
             if let Some(_) = self.0.insert(ident, atom) {
                 panic!("Attempted to rebind existing variable {}.", ident_c);
             }
-        }
-
-        fn clear(&mut self) {
-            self.0.clear()
         }
     }
 

@@ -9,6 +9,9 @@ Apparently somebody made a stack-based esolang with this name in 2013 but it
 seemed like a meme. The name is up for change if somebody ever complains to me
 about it.
 
+Fun fact: `pancake` uses the parser library `nom`. No, this joke has not gone
+too far.
+
 ## Motivation
 
 I want to learn Rust and design a simple programming language. Why not both at
@@ -20,16 +23,21 @@ semantics as a transformation of a single, global state, with actual changes
 restricted. However, in implementation, we just push and pop from a stack. Nice
 and simple.
 
-In fact, it's such a simple model that there's no real need for any complex
-parser - everything can be implemented from near-scratch. This allows for plenty
-of flexibility in determining syntax and semantics. The fun is in experimenting!
-
 On the other hand, there are plenty of explicit non-goals: compilation,
 performance, safety. These are outside of my interest for a new hobby language.
 
 ## Work Queue
 
 - Write some docstrings with test examples.
+- Combinators like `fork`/`split`/`cat`
+- Make parser more whitespace-insensitive
+- Lists/composites, `match`
+  - Iterators
+- Functions defined for singular values
+- String types / polymorphism, standard string operations (split, substring,
+  index, concat, format)
+  - Uses of traits like Add requires changing macros
+- `print`
 
 ## Roadmap
 
@@ -73,8 +81,8 @@ performance, safety. These are outside of my interest for a new hobby language.
   - [x] Comparators: `<` `>` `=` `<=` `>=`
   - [x] `A B C cond` where `A` is boolean, `B` and `C` are quotations, is
         semantically "if A then eval B else eval C".
-        - [ ] `A B if` where `B` is boolean, is semantically "if A then eval B".
-        - Both of these consume the boolean before evaluating quotations.
+    - [ ] `A B if` where `B` is boolean, is semantically "if A then eval B".
+    - Both of these consume the boolean before evaluating quotations.
 
 - [ ] Composite Types
   - [ ] Lists
@@ -109,10 +117,8 @@ performance, safety. These are outside of my interest for a new hobby language.
   - [x] Write some tests so I don't have to manually check things every time
   - [ ] Write some docs that are more organized than this haphazard roadmap
   - [x] Use macros to generalize a bunch of repetitive code
-    - Do another pass to look for more excessive repetition, and try to
-      refactor, with macros or otherwise
   - [ ] Add transaction logging to Env to facilitate easier debugging
-  - [ ] Better pretty-print of Env/Stack/Context
+  - [x] Better pretty-print of Env/Stack/Context
   - [ ] Loops/Iteration (of some kind)
   - [x] Comment syntax
   - [ ] I/O that isn't just printing the whole state (maybe `print`?)

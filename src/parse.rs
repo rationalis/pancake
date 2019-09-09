@@ -7,7 +7,7 @@ use nom::{
     bytes::complete::tag,
     character::complete::*,
     character::complete::char as nomchar,
-    combinator::{map, map_res, not, opt, recognize},
+    combinator::{all_consuming, map, map_res, not, opt, recognize},
     multi::{many1, separated_list},
     sequence::{delimited, preceded, terminated, tuple}
 };
@@ -103,14 +103,14 @@ fn parse_bracket_nom_(token: &str) -> IResult<&str, Atom> {
     ) (token)
 }
 
-fn parse_token_nom_(token: String) -> Atom {
+fn parse_token_nom_(token: &str) -> IResult<&str, Atom> {
     alt((parse_bracket_nom_, parse_num_nom_, parse_symbol_nom_,
          parse_op_nom_, parse_special_ident_nom_, parse_ident_nom_)
-    ) (token.as_str()).unwrap().1
+    ) (token)
 }
 
 pub fn parse_token(token: String) -> Atom {
-    parse_token_nom_(token)
+    parse_token_nom_(token.as_str()).unwrap().1
 }
 
 /// Parse a line definition of a variable like `let a = 100` or `fn inc = 1 +`.
@@ -155,10 +155,9 @@ fn parse_fn(line: &str) -> Option<Atom> {
     let result = parser(line);
 
     if let Ok((s, v)) = result {
-        let _: &str = s;
+        let expr: &str = s;
         let _: Vec<Atom> = v;
         if let Atom::Plain(ident) = &v[0] {
-            let expr = s;
             return Some(Atom::DefUnparsedFn(
                 ident.to_string(),
                 v.split_at(1).1.iter().map(
@@ -172,6 +171,27 @@ fn parse_fn(line: &str) -> Option<Atom> {
     }
 
     None
+}
+
+pub fn parse_line(line: &str) -> Vec<Atom> {
+    // Early exit for comments
+    if let Some('#') = line.chars().next() {
+        return Vec::new();
+    }
+
+    if let Some(atom) = parse_def(line) {
+        return vec![atom];
+    }
+
+    let parser =
+        all_consuming(
+            delimited(multispace0,
+                      separated_list(opt(multispace1), parse_token_nom_),
+                      multispace0));
+
+    let result = parser(line);
+    let (_, v) = result.unwrap();
+    v
 }
 
 #[test]

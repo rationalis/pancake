@@ -115,20 +115,8 @@ pub fn eval_with_new_scope(expr: &String, env: &mut Env) -> Atom {
 }
 
 pub fn eval_line(line: &String, env: &mut Env) {
-    // Early exit for comments
-    if let Some('#') = line.chars().next() {
-        return;
-    }
-
-    // Special handler for def syntax sugar
-    if let Some(def_atom) = parse_def(line) {
-        eval_atom(def_atom, env);
-        return;
-    }
-
-    let iter = line.split_ascii_whitespace();
-    for token in iter {
-        eval_atom(parse_token(token.to_string()), env);
+    for atom in parse_line(line) {
+        eval_atom(atom, env);
     }
 }
 
