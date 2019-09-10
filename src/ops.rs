@@ -61,7 +61,16 @@ pub fn eval_boolean_op(op: OpB, env: &mut Env) {
                 }
             }
         },
-        If => unimplemented!()
+        If =>  {
+            let body = env.pop_atom();
+            let condition = env.pop_atom();
+            if let (Atom::Quotation(body_q),
+                    Atom::Bool(cond)) = (body, condition) {
+                if cond {
+                    eval_atom(Atom::Function(Vec::new(), body_q), env);
+                }
+            }
+        }
     }
 }
 

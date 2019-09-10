@@ -79,12 +79,12 @@ assembly are out of scope.
     - Composition/currying for free, hopefully.
   - [x] Named parameters: `fn f a b c = a` = `drop drop`
 
-- [ ] Logic / Booleans
+- [x] Logic / Booleans
   - [x] Booleans: `true` `false` `and` `or` `not`
   - [x] Comparators: `<` `>` `=` `<=` `>=`
   - [x] `A B C cond` where `A` is boolean, `B` and `C` are quotations, is
         semantically "if A then eval B else eval C".
-    - [ ] `A B if` where `B` is boolean, is semantically "if A then eval B".
+    - [x] `A B if` where `A` is boolean, is semantically "if A then eval B".
     - Both of these consume the boolean before evaluating quotations.
 
 - [ ] Composite Types
