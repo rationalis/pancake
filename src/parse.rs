@@ -22,7 +22,7 @@ fn parse_num_nom_(token: &str) -> IResult<&str, Atom> {
                 digit1))),
             |s: &str| s.parse::<NumType>()
         ),
-        |n: NumType| Atom::Num(n)
+        Atom::Num
     ) (&token)
 }
 

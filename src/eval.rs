@@ -69,12 +69,10 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
                 } else {
                     panic!("Expected '<quotation> <ident> fn'.")
                 }
-            } else {
-                if let Atom::Symbol(ident) = a {
+            } else if let Atom::Symbol(ident) = a {
                     env.bind_var(&ident, b);
-                } else {
-                    panic!("Expected '<value> <ident> let'.")
-                }
+            } else {
+                panic!("Expected '<value> <ident> let'.")
             }
         },
         Atom::Call => {
@@ -107,7 +105,7 @@ pub fn eval_with_new_scope(expr: &str, env: &mut Env) -> Atom {
     eval_line(&expr, env);
     let mut stack : Stack = env.pop().unwrap().stack;
     if let Some(atom) = stack.pop() {
-        return atom;
+        atom
     } else {
         panic!("Expected result but stack was empty.");
     }

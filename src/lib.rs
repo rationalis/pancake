@@ -9,13 +9,13 @@ pub mod types {
     use std::collections::HashMap;
 
     pub const SPECIAL_CHARS : &str = "+-*/%[]'";
-    pub const ARITHMETIC_OPS : [&'static str;10] = [
+    pub const ARITHMETIC_OPS : [&str;10] = [
         "+","-","*","/","%","<",">","<=",">=","="];
-    pub const BOOLEAN_OPS : [&'static str;4] = [
+    pub const BOOLEAN_OPS : [&str;4] = [
         "and", "or", "cond", "if"];
-    pub const STACK_OPS : [&'static str;3] = [
+    pub const STACK_OPS : [&str;3] = [
         "dup", "drop", "swap"];
-    pub const SPECIAL_IDENTS : [&'static str;6] = [
+    pub const SPECIAL_IDENTS : [&str;6] = [
         "call", "let", "fn", "true", "false", "not"];
 
     pub type NumType = i32;
@@ -73,7 +73,7 @@ pub mod types {
                 panic!("Attempted to rebind reserved word {}.", ident);
             }
 
-            if let Some(_) = self.0.insert(InlinableString::from(ident), atom) {
+            if self.0.insert(InlinableString::from(ident), atom).is_some() {
                 panic!("Attempted to rebind existing variable {}.", ident);
             }
         }
@@ -88,15 +88,15 @@ pub mod types {
     }
 
     fn blank_frame() -> Frame {
-        return Frame {
+        Frame {
             stack: Stack::new(),
             context: Context::new(),
             params: None,
             lazy: false
-        };
+        }
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, Default)]
     pub struct Env(Vec<Frame>);
 
     impl Env {
@@ -106,7 +106,7 @@ pub mod types {
 
         fn last_frame(&mut self) -> &mut Frame {
             if let Some(frame) = self.0.last_mut() {
-                return frame;
+                frame
             } else {
                 panic!("Tried to get a frame from an empty stack.")
             }
