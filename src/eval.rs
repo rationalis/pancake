@@ -125,7 +125,6 @@ pub fn eval_program(program: &str) -> Env {
     let lines = program.split('\n');
     for line in lines {
         eval_line(&line.to_string(), &mut env);
-        println!("Env: {:#?}", env);
     }
     env
 }
