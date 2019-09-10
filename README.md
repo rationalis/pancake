@@ -23,14 +23,17 @@ semantics as a transformation of a single, global state, with actual changes
 restricted. However, in implementation, we just push and pop from a stack. Nice
 and simple.
 
-On the other hand, there are plenty of explicit non-goals: compilation,
-performance, safety. These are outside of my interest for a new hobby language.
+On the other hand, there are plenty of explicit non-goals. Primarily,
+compilation and safety. These are outside of my interest for a new hobby
+language. Additionally, performance will only be measured and optimized at a
+high level. Limiting excessive allocations and using interesting algorithms/data
+structures are good. Things like in-depth profiling and writing C code /
+assembly are out of scope.
 
 ## Work Queue
 
 - Write some docstrings with test examples.
 - Combinators like `fork`/`split`/`cat`
-- Make parser more whitespace-insensitive
 - Lists/composites, `match`
   - Iterators
 - Functions defined for singular values
@@ -118,7 +121,6 @@ performance, safety. These are outside of my interest for a new hobby language.
   - [x] Write some tests so I don't have to manually check things every time
   - [ ] Write some docs that are more organized than this haphazard roadmap
   - [x] Use macros to generalize a bunch of repetitive code
-  - [ ] Add transaction logging to Env to facilitate easier debugging
   - [x] Better pretty-print of Env/Stack/Context
   - [ ] Loops/Iteration (of some kind)
   - [x] Comment syntax
