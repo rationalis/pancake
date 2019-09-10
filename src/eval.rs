@@ -2,6 +2,16 @@ use crate::ops;
 use crate::types::{Atom, Stack, Env};
 use crate::parse::*;
 
+pub fn eval_call(quotation: Atom, env: &mut Env) {
+    if let Atom::Quotation(q) = quotation {
+        for atom in q {
+            eval_atom(atom, env);
+        }
+    } else {
+        panic!("Tried to call a non-quotation.");
+    }
+}
+
 /// Take an Atom and evaluate its effect on the stack. For basic primitives,
 /// this simply pushes them onto the stack.
 pub fn eval_atom(atom: Atom, env: &mut Env) {
@@ -37,14 +47,12 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
             to_push = Some(quotation);
         },
         Atom::Function(params, body) => {
-            if !params.is_empty() {
-                env.bind_params(params);
-                env.push_atom(Atom::Quotation(body));
-                eval_atom(Atom::Call, env);
-                env.unbind_params();
+            if params.is_empty() {
+                eval_call(Atom::Quotation(body), env);
             } else {
-                env.push_atom(Atom::Quotation(body));
-                eval_atom(Atom::Call, env);
+                env.bind_params(params);
+                eval_call(Atom::Quotation(body), env);
+                env.unbind_params();
             }
         },
         Atom::DefUnparsedVar(ident, expr) => {
@@ -75,15 +83,7 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
                 panic!("Expected '<value> <ident> let'.")
             }
         },
-        Atom::Call => {
-            if let Atom::Quotation(q) = env.pop_atom() {
-                for atom in q {
-                    eval_atom(atom, env);
-                }
-            } else {
-                panic!("Tried to call a non-quotation.");
-            }
-        },
+        Atom::Call => eval_call(env.pop_atom(), env),
         Atom::Plain(ident) => {
             match env.find_var(&ident) {
                 Some(Atom::Function(params, body)) =>

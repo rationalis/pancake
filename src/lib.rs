@@ -83,7 +83,10 @@ pub mod types {
     pub enum OpS {
         Dup,
         Drop,
-        Swap
+        Swap,
+        List,
+        Map,
+        Splat
     }
 
     impl TryFrom<&str> for OpS {
@@ -95,6 +98,9 @@ pub mod types {
                     "dup" => Self::Dup,
                     "drop" => Self::Drop,
                     "swap" => Self::Swap,
+                    "list" => Self::List,
+                    "map" => Self::Map,
+                    "splat" => Self::Splat,
                     _ => { return Err("Unrecognized stack operator."); }
                 }
             )
@@ -187,7 +193,9 @@ pub mod types {
             }
         }
 
-        // TODO: Add fns last_atom, pop_atom
+        pub fn append_atoms(&mut self, mut atoms: Vec<Atom>) {
+            self.last_frame().stack.append(&mut atoms)
+        }
 
         pub fn push_atom(&mut self, atom: Atom) {
             self.last_frame().stack.push(atom)

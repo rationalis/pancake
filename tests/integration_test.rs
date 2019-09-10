@@ -122,6 +122,14 @@ fn whitespace_insensitive() {
 ");
 }
 
+#[test]
+fn map_inc() {
+    assert_prog_output(ntoa(vec![2,3,4,5,6]),
+                       r"
+[1 2 3 4 5] list [1 +] map splat
+");
+}
+
 /*
 #[test]
 fn iterative_fibonacci() {

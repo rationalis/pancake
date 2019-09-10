@@ -89,5 +89,35 @@ pub fn eval_stack_op(op: OpS, env: &mut Env) {
             env.push_atom(a);
             env.push_atom(b);
         },
+        List => {
+            use crate::eval::eval_call;
+            let q = env.pop_atom();
+            env.push_blank(false);
+            eval_call(q, env);
+            let stack = env.pop().unwrap().stack;
+            env.push_atom(Atom::List(stack));
+        },
+        Map => {
+            use crate::eval::eval_call;
+            let q = env.pop_atom();
+            let l = env.pop_atom();
+            if let Atom::List(list) = l {
+                let new_list = list.iter().map(|atom| {
+                    env.push_blank(false);
+                    env.push_atom(atom.clone());
+                    eval_call(q.clone(), env);
+                    env.pop().unwrap().stack.pop().unwrap()
+                }).collect();
+                env.push_atom(Atom::List(new_list));
+            } else {
+                panic!("Expected list for map.");
+            }
+        },
+        Splat => {
+            let l = env.pop_atom();
+            if let Atom::List(list) = l {
+                env.append_atoms(list)
+            }
+        }
     }
 }
