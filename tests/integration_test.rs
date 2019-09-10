@@ -122,6 +122,16 @@ fn whitespace_insensitive() {
 ");
 }
 
+#[test]
+#[ignore]
+fn stress_test() {
+    assert_prog_output(ntoa(vec![832040]),
+                       r"
+fn fib = dup 2 <= [ drop 1 ] [ 1 - dup 1 - fib swap fib + ] cond
+30 fib
+");
+}
+
 /*
 #[test]
 fn iterative_fibonacci() {
