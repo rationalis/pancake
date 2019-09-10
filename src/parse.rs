@@ -1,5 +1,7 @@
+use std::convert::TryFrom;
+
 use regex::Regex;
-use crate::types::{ARITHMETIC_OPS, BOOLEAN_OPS, STACK_OPS, Atom, NumType};
+use crate::types::{Atom, NumType, OpA, OpB, OpS};
 
 use inlinable_string::InlinableString;
 
@@ -27,8 +29,7 @@ fn parse_num_nom_(token: &str) -> IResult<&str, Atom> {
 }
 
 fn parse_op_(token: &str) -> Atom {
-    let f = |e: &&&str| *e == &token;
-    if let Some(op) = ARITHMETIC_OPS.iter().find(f) {
+    if let Ok(op) = OpA::try_from(token) {
         Atom::ArithmeticOp(op)
     } else {
         panic!("Unrecognized operator '{}'", token);
@@ -45,10 +46,9 @@ fn parse_special_ident_(token: &str) -> Option<Atom> {
             "false" => Atom::Bool(false),
             "not" => Atom::NotOp,
             s => {
-                let f = |e: &&&str| *e == &s;
-                if let Some(op) = BOOLEAN_OPS.iter().find(f) {
+                if let Ok(op) = OpB::try_from(s) {
                     Atom::BooleanOp(op)
-                } else if let Some(op) = STACK_OPS.iter().find(f) {
+                } else if let Ok(op) = OpS::try_from(s) {
                     Atom::StackOp(op)
                 } else {
                     return None;

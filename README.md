@@ -41,7 +41,6 @@ assembly are out of scope.
   index, concat, format)
   - Uses of traits like Add requires changing macros
 - `print`
-- Replace `&str` arrays for built-in ops with proper enums
 
 ## Roadmap
 

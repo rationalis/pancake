@@ -7,24 +7,99 @@ pub mod parse;
 pub mod types {
     use inlinable_string::InlinableString;
     use std::collections::HashMap;
+    use std::convert::TryFrom;
 
-    pub const SPECIAL_CHARS : &str = "+-*/%[]'";
-    pub const ARITHMETIC_OPS : [&str;10] = [
-        "+","-","*","/","%","<",">","<=",">=","="];
-    pub const BOOLEAN_OPS : [&str;4] = [
-        "and", "or", "cond", "if"];
-    pub const STACK_OPS : [&str;3] = [
-        "dup", "drop", "swap"];
     pub const SPECIAL_IDENTS : [&str;6] = [
         "call", "let", "fn", "true", "false", "not"];
 
     pub type NumType = i32;
-    pub type SpecialIdentifier = &'static str;
     pub type Identifier = InlinableString;
     pub type UnparsedExpr = InlinableString;
     pub type IsFunction = bool;
 
     pub type Stack = Vec<Atom>;
+
+    #[derive(Debug, Clone, Eq, PartialEq)]
+    pub enum OpA {
+        Add,
+        Sub,
+        Mult,
+        Div,
+        Mod,
+        Less,
+        Greater,
+        LEq,
+        GEq,
+        Eq
+    }
+
+    impl TryFrom<&str> for OpA {
+        type Error = &'static str;
+
+        fn try_from(op: &str) -> Result<Self, Self::Error> {
+            Ok(
+                match op {
+                    "+" => Self::Add,
+                    "-" => Self::Sub,
+                    "*" => Self::Mult,
+                    "/" => Self::Div,
+                    "%" => Self::Mod,
+                    "<" => Self::Less,
+                    ">" => Self::Greater,
+                    "<=" => Self::LEq,
+                    ">=" => Self::GEq,
+                    "=" => Self::Eq,
+                    _ => { return Err("Unrecognized arithmetic operator."); }
+                }
+            )
+        }
+    }
+
+    #[derive(Debug, Clone, Eq, PartialEq)]
+    pub enum OpB {
+        And,
+        Or,
+        Cond,
+        If
+    }
+
+    impl TryFrom<&str> for OpB {
+        type Error = &'static str;
+
+        fn try_from(op: &str) -> Result<Self, Self::Error> {
+            Ok(
+                match op {
+                    "and" => Self::And,
+                    "or" => Self::Or,
+                    "cond" => Self::Cond,
+                    "if" => Self::If,
+                    _ => { return Err("Unrecognized boolean operator."); }
+                }
+            )
+        }
+    }
+
+    #[derive(Debug, Clone, Eq, PartialEq)]
+    pub enum OpS {
+        Dup,
+        Drop,
+        Swap
+    }
+
+    impl TryFrom<&str> for OpS {
+        type Error = &'static str;
+
+        fn try_from(op: &str) -> Result<Self, Self::Error> {
+            Ok(
+                match op {
+                    "dup" => Self::Dup,
+                    "drop" => Self::Drop,
+                    "swap" => Self::Swap,
+                    _ => { return Err("Unrecognized stack operator."); }
+                }
+            )
+        }
+    }
 
     #[derive(Debug, Clone, Eq, PartialEq)]
     pub enum Atom {
@@ -34,9 +109,9 @@ pub mod types {
         List(Vec<Atom>),
 
         NotOp,
-        BooleanOp(SpecialIdentifier),
-        ArithmeticOp(SpecialIdentifier),
-        StackOp(SpecialIdentifier),
+        BooleanOp(OpB),
+        ArithmeticOp(OpA),
+        StackOp(OpS),
 
         QuotationStart, // [
         QuotationEnd, // ]
@@ -67,8 +142,8 @@ pub mod types {
 
         fn insert(&mut self, ident: &str, atom: Atom) {
             if SPECIAL_IDENTS.contains(&ident) ||
-                BOOLEAN_OPS.contains(&ident) ||
-                STACK_OPS.contains(&ident) {
+                OpB::try_from(ident).is_ok() ||
+                OpS::try_from(ident).is_ok() {
 
                 panic!("Attempted to rebind reserved word {}.", ident);
             }

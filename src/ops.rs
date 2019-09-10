@@ -1,4 +1,4 @@
-use crate::types::{Atom, Env};
+use crate::types::{Atom, Env, OpA, OpB, OpS};
 use crate::eval::eval_atom;
 
 macro_rules! eval_op {
@@ -26,27 +26,28 @@ macro_rules! eval_op {
     };
 }
 
-pub fn eval_arithmetic_op(s: &str, env: &mut Env) {
-    match s {
-        "+" => eval_op!(+, Atom::Num, env),
-        "-" => eval_op!(-, Atom::Num, env),
-        "*" => eval_op!(*, Atom::Num, env),
-        "/" => eval_op!(/, Atom::Num, env),
-        "%" => eval_op!(%, Atom::Num, env),
-        "<" => eval_op!(<, Atom::Num, Atom::Bool, env),
-        ">" => eval_op!(>, Atom::Num, Atom::Bool, env),
-        "<=" => eval_op!(<=, Atom::Num, Atom::Bool, env),
-        ">=" => eval_op!(>=, Atom::Num, Atom::Bool, env),
-        "=" => eval_op!(==, Atom::Num, Atom::Bool, env),
-        _ => panic!("This should never happen.")
+pub fn eval_arithmetic_op(op: OpA, env: &mut Env) {
+    use OpA::*;
+    match op {
+        Add => eval_op!(+, Atom::Num, env),
+        Sub => eval_op!(-, Atom::Num, env),
+        Mult => eval_op!(*, Atom::Num, env),
+        Div => eval_op!(/, Atom::Num, env),
+        Mod => eval_op!(%, Atom::Num, env),
+        Less => eval_op!(<, Atom::Num, Atom::Bool, env),
+        Greater => eval_op!(>, Atom::Num, Atom::Bool, env),
+        LEq => eval_op!(<=, Atom::Num, Atom::Bool, env),
+        GEq => eval_op!(>=, Atom::Num, Atom::Bool, env),
+        Eq => eval_op!(==, Atom::Num, Atom::Bool, env),
     }
 }
 
-pub fn eval_boolean_op(op: &str, env: &mut Env) {
+pub fn eval_boolean_op(op: OpB, env: &mut Env) {
+    use OpB::*;
     match op {
-        "and" => eval_op!(&&, Atom::Bool, env),
-        "or" => eval_op!(||, Atom::Bool, env),
-        "cond" => {
+        And => eval_op!(&&, Atom::Bool, env),
+        Or => eval_op!(||, Atom::Bool, env),
+        Cond => {
             let else_branch = env.pop_atom();
             let if_branch = env.pop_atom();
             let condition = env.pop_atom();
@@ -60,24 +61,24 @@ pub fn eval_boolean_op(op: &str, env: &mut Env) {
                 }
             }
         },
-        _ => panic!("This should never happen.")
+        If => unimplemented!()
     }
 }
 
-pub fn eval_stack_op(op: &str, env: &mut Env) {
+pub fn eval_stack_op(op: OpS, env: &mut Env) {
+    use OpS::*;
     match op {
-        "dup" => {
+        Dup => {
             let a = env.pop_atom();
             env.push_atom(a.clone());
             env.push_atom(a);
         },
-        "drop" => { env.pop_atom(); },
-        "swap" => {
+        Drop => { env.pop_atom(); },
+        Swap => {
             let a = env.pop_atom();
             let b = env.pop_atom();
             env.push_atom(a);
             env.push_atom(b);
         },
-        _ => panic!("This should never happen.")
     }
 }
