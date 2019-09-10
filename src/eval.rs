@@ -1,5 +1,5 @@
 use crate::ops;
-use crate::types::{Atom, Stack, Env};
+use crate::types::{Atom, Stack, Env, Identifier};
 use crate::parse::*;
 
 pub fn eval_call(quotation: Atom, env: &mut Env) {
@@ -9,6 +9,16 @@ pub fn eval_call(quotation: Atom, env: &mut Env) {
         }
     } else {
         panic!("Tried to call a non-quotation.");
+    }
+}
+
+pub fn eval_function(params: Vec<Identifier>, body: Stack, env: &mut Env) {
+    if params.is_empty() {
+        eval_call(Atom::Quotation(body), env);
+    } else {
+        env.bind_params(params);
+        eval_call(Atom::Quotation(body), env);
+        env.unbind_params();
     }
 }
 
@@ -47,13 +57,7 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
             to_push = Some(quotation);
         },
         Atom::Function(params, body) => {
-            if params.is_empty() {
-                eval_call(Atom::Quotation(body), env);
-            } else {
-                env.bind_params(params);
-                eval_call(Atom::Quotation(body), env);
-                env.unbind_params();
-            }
+            eval_function(params, body, env);
         },
         Atom::DefUnparsedVar(ident, expr) => {
             let result_of_expr = eval_with_new_scope(&expr, env);
@@ -87,7 +91,7 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
         Atom::Plain(ident) => {
             match env.find_var(&ident) {
                 Some(Atom::Function(params, body)) =>
-                    eval_atom(Atom::Function(params, body), env),
+                    eval_function(params, body, env),
                 Some(atom) => to_push = Some(atom),
                 _ => panic!("Unrecognized identifier: {}", ident)
             }
