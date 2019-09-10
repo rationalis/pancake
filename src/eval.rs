@@ -121,7 +121,7 @@ pub fn eval_program(program: &str) -> Env {
     let mut env = Env::new();
     let lines = program.split('\n');
     for line in lines {
-        eval_line(&line.to_string(), &mut env);
+        eval_line(line, &mut env);
     }
     env
 }
