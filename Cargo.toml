@@ -15,6 +15,7 @@ harness = false
 nom = "5"
 regex = "1"
 lazy_static = "1.4.0"
+inlinable_string = "0.1"
 # I was using Vector to support cheap clones; seems unnecessary right now.
 # im-rc = "13"
 

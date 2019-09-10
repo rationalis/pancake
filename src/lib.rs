@@ -5,6 +5,7 @@ pub mod ops;
 pub mod parse;
 
 pub mod types {
+    use inlinable_string::InlinableString;
     use std::collections::HashMap;
 
     pub const SPECIAL_CHARS : &str = "+-*/%[]'";
@@ -19,8 +20,8 @@ pub mod types {
 
     pub type NumType = i32;
     pub type SpecialIdentifier = &'static str;
-    pub type Identifier = String;
-    pub type UnparsedExpr = String;
+    pub type Identifier = InlinableString;
+    pub type UnparsedExpr = InlinableString;
     pub type IsFunction = bool;
 
     pub type Stack = Vec<Atom>;
@@ -53,7 +54,7 @@ pub mod types {
     }
 
     #[derive(Debug)]
-    pub struct Context(HashMap<String, Atom>);
+    pub struct Context(HashMap<InlinableString, Atom>);
 
     impl Context {
         fn new() -> Context {
@@ -64,19 +65,16 @@ pub mod types {
             self.0.get(ident)
         }
 
-        fn insert(&mut self, ident: Identifier, atom: Atom) {
-            let ident_c = ident.clone();
-            let ident_s = ident_c.as_str();
+        fn insert(&mut self, ident: &str, atom: Atom) {
+            if SPECIAL_IDENTS.contains(&ident) ||
+                BOOLEAN_OPS.contains(&ident) ||
+                STACK_OPS.contains(&ident) {
 
-            if SPECIAL_IDENTS.contains(&ident_s) ||
-                BOOLEAN_OPS.contains(&ident_s) ||
-                STACK_OPS.contains(&ident_s) {
-
-                panic!("Attempted to rebind reserved word {}.", ident_s);
+                panic!("Attempted to rebind reserved word {}.", ident);
             }
 
-            if let Some(_) = self.0.insert(ident, atom) {
-                panic!("Attempted to rebind existing variable {}.", ident_c);
+            if let Some(_) = self.0.insert(InlinableString::from(ident), atom) {
+                panic!("Attempted to rebind existing variable {}.", ident);
             }
         }
     }
@@ -138,14 +136,14 @@ pub mod types {
             self.0.pop()
         }
 
-        pub fn bind_var(&mut self, ident: Identifier, atom: Atom) {
+        pub fn bind_var(&mut self, ident: &str, atom: Atom) {
             self.last_frame().context.insert(ident, atom)
         }
 
         pub fn bind_params(&mut self, idents: Vec<Identifier>) {
             let mut bound_params = Context::new();
             for ident in idents.iter().rev() {
-                bound_params.insert(ident.to_string(), self.pop_atom())
+                bound_params.insert(ident, self.pop_atom())
             }
             self.push_blank(false);
             self.last_frame().params = Some(bound_params);

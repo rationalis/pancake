@@ -49,30 +49,29 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
         },
         Atom::DefUnparsedVar(ident, expr) => {
             let result_of_expr = eval_with_new_scope(&expr, env);
-            env.bind_var(ident, result_of_expr);
+            env.bind_var(&ident, result_of_expr);
         },
-        Atom::DefUnparsedFn(ident, params, mut expr,) => {
-            expr = format!("[ {} ]", expr);
-            let mut result_of_expr = eval_with_new_scope(&expr, env);
+        Atom::DefUnparsedFn(ident, params, expr) => {
+            let expr = format!("[ {} ]", expr);
+            let result_of_expr = eval_with_new_scope(&expr, env);
             if let Atom::Quotation(q) = result_of_expr {
-                result_of_expr = Atom::Function(params, q);
+                env.bind_var(&ident, Atom::Function(params, q));
             } else {
                 unreachable!();
             }
-            env.bind_var(ident, result_of_expr);
         },
         Atom::DefOp(is_function) => {
             let a = env.pop_atom();
             let b = env.pop_atom();
             if is_function {
                 if let (Atom::Symbol(ident), Atom::Quotation(q)) = (a, b) {
-                    env.bind_var(ident, Atom::Function(Vec::new(), q));
+                    env.bind_var(&ident, Atom::Function(Vec::new(), q));
                 } else {
                     panic!("Expected '<quotation> <ident> fn'.")
                 }
             } else {
                 if let Atom::Symbol(ident) = a {
-                    env.bind_var(ident, b);
+                    env.bind_var(&ident, b);
                 } else {
                     panic!("Expected '<value> <ident> let'.")
                 }

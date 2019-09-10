@@ -1,6 +1,8 @@
 use regex::Regex;
 use crate::types::{ARITHMETIC_OPS, BOOLEAN_OPS, STACK_OPS, Atom, NumType};
 
+use inlinable_string::InlinableString;
+
 use nom::{
     IResult,
     branch::alt,
@@ -80,7 +82,7 @@ fn parse_ident_nom_(token: &str) -> IResult<&str, Atom> {
         |s: &str| {
             let special = not(parse_special_ident_nom_) (s);
             if special.is_ok() {
-                Ok(Atom::Plain(s.to_string()))
+                Ok(Atom::Plain(InlinableString::from(s)))
             } else {
                 Err("Unexpected reserved identifier.")
             }
@@ -142,8 +144,8 @@ fn parse_let(line: &str) -> Option<Atom> {
     let captures = RE.captures(line);
     if let Some(caps) = captures {
         // TODO: handle forbidden identifiers
-        let ident = caps["ident"].to_string();
-        let expr = caps["expr"].to_string();
+        let ident = InlinableString::from(&caps["ident"]);
+        let expr = InlinableString::from(&caps["expr"]);
 
         return Some(Atom::DefUnparsedVar(ident, expr));
     }
@@ -168,14 +170,14 @@ fn parse_fn(line: &str) -> Option<Atom> {
         let _: Vec<Atom> = v;
         if let Atom::Plain(ident) = &v[0] {
             return Some(Atom::DefUnparsedFn(
-                ident.to_string(),
+                ident.clone(),
                 v.split_at(1).1.iter().map(
                     |a| if let Atom::Plain(name) = a {
                         name.clone()
                     } else {
                         unreachable!()
                     }).collect(),
-                expr.to_string()));
+                InlinableString::from(expr)));
         }
     }
 
@@ -218,7 +220,7 @@ fn test_special_ident_fail() {
 
 #[test]
 fn test_parse_var_name() {
-    assert_eq!(Ok(("", Atom::Plain("a".to_string()))), parse_ident_nom_("a"));
+    assert_eq!(Ok(("", Atom::Plain(InlinableString::from("a")))), parse_ident_nom_("a"));
 }
 
 #[test]
