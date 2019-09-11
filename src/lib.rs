@@ -14,7 +14,6 @@ pub mod types {
 
     pub type NumType = i32;
     pub type Identifier = InlinableString;
-    pub type UnparsedExpr = InlinableString;
     pub type IsFunction = bool;
 
     pub type Stack = Vec<Atom>;
@@ -124,8 +123,8 @@ pub mod types {
         Quotation(Vec<Atom>),
         Function(Vec<Identifier>, Vec<Atom>),
 
-        DefUnparsedVar(Identifier, UnparsedExpr),
-        DefUnparsedFn(Identifier, Vec<Identifier>, UnparsedExpr),
+        DefVar(Identifier, Vec<Atom>),
+        DefFn(Identifier, Vec<Identifier>, Vec<Atom>),
         DefOp(IsFunction),
 
         Call,

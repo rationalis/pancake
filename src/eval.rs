@@ -12,7 +12,7 @@ pub fn eval_call(quotation: Atom, env: &mut Env) {
     }
 }
 
-pub fn eval_function(params: Vec<Identifier>, body: Stack, env: &mut Env) {
+fn eval_function(params: Vec<Identifier>, body: Stack, env: &mut Env) {
     if params.is_empty() {
         eval_call(Atom::Quotation(body), env);
     } else {
@@ -36,7 +36,6 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
         return;
     } 
 
-    let mut to_push: Option<Atom> = None;
     match atom {
         Atom::ArithmeticOp(c) => ops::eval_arithmetic_op(c, env),
         Atom::BooleanOp(s) => ops::eval_boolean_op(s, env),
@@ -54,18 +53,17 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
         Atom::QuotationEnd => {
             let stack: Stack = env.pop().unwrap().stack;
             let quotation = Atom::Quotation(stack);
-            to_push = Some(quotation);
+            env.push_atom(quotation);
         },
         Atom::Function(params, body) => {
             eval_function(params, body, env);
         },
-        Atom::DefUnparsedVar(ident, expr) => {
-            let result_of_expr = eval_with_new_scope(&expr, env);
+        Atom::DefVar(ident, expr) => {
+            let result_of_expr = eval_with_new_scope(expr, env, false);
             env.bind_var(&ident, result_of_expr);
         },
-        Atom::DefUnparsedFn(ident, params, expr) => {
-            let expr = format!("[ {} ]", expr);
-            let result_of_expr = eval_with_new_scope(&expr, env);
+        Atom::DefFn(ident, params, expr) => {
+            let result_of_expr = eval_with_new_scope(expr, env, true);
             if let Atom::Quotation(q) = result_of_expr {
                 env.bind_var(&ident, Atom::Function(params, q));
             } else {
@@ -83,7 +81,7 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
                     panic!("Expected '<quotation> <ident> fn'.")
                 }
             } else if let Atom::Symbol(ident) = a {
-                    env.bind_var(&ident, b);
+                env.bind_var(&ident, b);
             } else {
                 panic!("Expected '<value> <ident> let'.")
             }
@@ -93,21 +91,24 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
             match env.find_var(&ident) {
                 Some(Atom::Function(params, body)) =>
                     eval_function(params, body, env),
-                Some(atom) => to_push = Some(atom),
+                Some(atom) => env.push_atom(atom),
                 _ => panic!("Unrecognized identifier: {}", ident)
             }
         },
-        _ => { to_push = Some(atom); }
-    }
-
-    if let Some(atom) = to_push {
-        env.push_atom(atom)
+        _ => env.push_atom(atom)
     }
 }
 
-pub fn eval_with_new_scope(expr: &str, env: &mut Env) -> Atom {
+pub fn eval_with_new_scope(expr: Vec<Atom>, env: &mut Env, is_fn: bool)
+                           -> Atom {
     env.push_blank(false);
-    eval_line(&expr, env);
+
+    if is_fn { eval_atom(Atom::QuotationStart, env); }
+    for atom in expr {
+        eval_atom(atom, env);
+    }
+    if is_fn { eval_atom(Atom::QuotationEnd, env); }
+
     let mut stack : Stack = env.pop().unwrap().stack;
     if let Some(atom) = stack.pop() {
         atom

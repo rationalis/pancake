@@ -135,6 +135,18 @@ pub fn parse_def(line: &str) -> Option<Atom> {
     }
 }
 
+fn parse_expr(expr: &str) -> Vec<Atom> {
+    let parser =
+        all_consuming(
+            delimited(multispace0,
+                      many0(terminated(parse_token_nom_, opt(multispace1))),
+                      multispace0));
+
+    let result = parser(expr);
+    let (_, v) = result.unwrap();
+    v
+}
+
 fn parse_let(line: &str) -> Option<Atom> {
     lazy_static! {
         static ref RE: Regex =
@@ -145,9 +157,9 @@ fn parse_let(line: &str) -> Option<Atom> {
     if let Some(caps) = captures {
         // TODO: handle forbidden identifiers
         let ident = InlinableString::from(&caps["ident"]);
-        let expr = InlinableString::from(&caps["expr"]);
+        let expr = &caps["expr"];
 
-        return Some(Atom::DefUnparsedVar(ident, expr));
+        return Some(Atom::DefVar(ident, parse_expr(expr)));
     }
     None
 
@@ -171,7 +183,7 @@ fn parse_fn(line: &str) -> Option<Atom> {
         let v0: Atom = d.next().unwrap();
 
         if let Atom::Plain(ident) = v0 {
-            return Some(Atom::DefUnparsedFn(
+            return Some(Atom::DefFn(
                 ident,
                 d.map(
                     |a| if let Atom::Plain(name) = a {
@@ -179,7 +191,7 @@ fn parse_fn(line: &str) -> Option<Atom> {
                     } else {
                         unreachable!()
                     }).collect(),
-                InlinableString::from(expr)));
+                parse_expr(expr)));
         }
     }
 
@@ -196,15 +208,7 @@ pub fn parse_line(line: &str) -> Vec<Atom> {
         return vec![atom];
     }
 
-    let parser =
-        all_consuming(
-            delimited(multispace0,
-                      many0(terminated(parse_token_nom_, opt(multispace1))),
-                      multispace0));
-
-    let result = parser(line);
-    let (_, v) = result.unwrap();
-    v
+    parse_expr(line)
 }
 
 #[test]
