@@ -142,6 +142,10 @@ pub mod types {
             Context(HashMap::new())
         }
 
+        fn with_capacity(cap: usize) -> Context {
+            Context(HashMap::with_capacity(cap))
+        }
+
         fn get(&self, ident: &str) -> Option<&Atom> {
             self.0.get(ident)
         }
@@ -164,7 +168,7 @@ pub mod types {
     pub struct Frame {
         pub stack: Stack,
         pub context: Context,
-        pub params: Option<Context>,
+        pub params: Context,
         pub lazy: bool
     }
 
@@ -172,7 +176,7 @@ pub mod types {
         Frame {
             stack: Stack::new(),
             context: Context::new(),
-            params: None,
+            params: Context::new(),
             lazy: false
         }
     }
@@ -224,12 +228,12 @@ pub mod types {
         }
 
         pub fn bind_params(&mut self, idents: Vec<Identifier>) {
-            let mut bound_params = Context::new();
+            let mut bound_params = Context::with_capacity(idents.len());
             for ident in idents.iter().rev() {
                 bound_params.insert(ident, self.pop_atom())
             }
             self.push_blank(false);
-            self.last_frame().params = Some(bound_params);
+            self.last_frame().params = bound_params;
         }
 
         pub fn unbind_params(&mut self) {
@@ -237,12 +241,10 @@ pub mod types {
             self.last_frame().stack.append(&mut frame.stack)
         }
 
-        pub fn find_var(&mut self, ident: &Identifier) -> Option<Atom> {
+        pub fn find_var(&self, ident: &Identifier) -> Option<Atom> {
             if let Some(f) = self.0.last() {
-                if let Some(p) = &f.params {
-                    if let Some(atom) = p.get(ident) {
-                        return Some(atom.clone());
-                    }
+                if let Some(atom) = f.params.get(ident) {
+                    return Some(atom.clone());
                 }
             }
             for frame in self.0.iter().rev() {

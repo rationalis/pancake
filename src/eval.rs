@@ -77,7 +77,8 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
             let b = env.pop_atom();
             if is_function {
                 if let (Atom::Symbol(ident), Atom::Quotation(q)) = (a, b) {
-                    env.bind_var(&ident, Atom::Function(Vec::new(), q));
+                    env.bind_var(&ident,
+                                 Atom::Function(Vec::new(), q));
                 } else {
                     panic!("Expected '<quotation> <ident> fn'.")
                 }

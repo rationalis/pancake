@@ -165,15 +165,17 @@ fn parse_fn(line: &str) -> Option<Atom> {
 
     let result = parser(line);
 
-    if let Ok((s, v)) = result {
+    if let Ok((s, mut v)) = result {
         let expr: &str = s;
-        let _: Vec<Atom> = v;
-        if let Atom::Plain(ident) = &v[0] {
+        let mut d = v.drain(..);
+        let v0: Atom = d.next().unwrap();
+
+        if let Atom::Plain(ident) = v0 {
             return Some(Atom::DefUnparsedFn(
-                ident.clone(),
-                v.split_at(1).1.iter().map(
+                ident,
+                d.map(
                     |a| if let Atom::Plain(name) = a {
-                        name.clone()
+                        name
                     } else {
                         unreachable!()
                     }).collect(),
