@@ -1,5 +1,5 @@
 use crate::types::{Atom, Env, OpA, OpB, OpS};
-use crate::eval::eval_function;
+use crate::eval::{eval_call, eval_function};
 
 macro_rules! eval_op {
     ( $op:tt, $wrap:path, $env:ident ) => {
@@ -90,7 +90,6 @@ pub fn eval_stack_op(op: OpS, env: &mut Env) {
             env.push_atom(b);
         },
         List => {
-            use crate::eval::eval_call;
             let q = env.pop_atom();
             env.push_blank(false);
             eval_call(q, env);
@@ -98,7 +97,6 @@ pub fn eval_stack_op(op: OpS, env: &mut Env) {
             env.push_atom(Atom::List(stack));
         },
         Map => {
-            use crate::eval::eval_call;
             let q = env.pop_atom();
             let l = env.pop_atom();
             if let Atom::List(list) = l {
@@ -117,6 +115,25 @@ pub fn eval_stack_op(op: OpS, env: &mut Env) {
             let l = env.pop_atom();
             if let Atom::List(list) = l {
                 env.append_atoms(list)
+            }
+        },
+        Repeat => {
+            let n = env.pop_atom();
+            let q = env.pop_atom();
+            if let Atom::Num(times) = n {
+                for _ in 0..times {
+                    eval_call(q.clone(), env);
+                }
+            }
+        },
+        Get => {
+            if let Atom::Symbol(ident) = env.pop_atom() {
+                match env.find_var(&ident) {
+                    Some(Atom::Function(_, body)) =>
+                        env.push_atom(Atom::Quotation(body)),
+                    Some(_) => panic!("Tried to get a non-function."),
+                    _ => panic!("Unrecognized identifier: {}", ident)
+                }
             }
         }
     }

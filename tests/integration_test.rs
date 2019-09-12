@@ -130,6 +130,15 @@ fn map_inc() {
 ");
 }
 
+#[test]
+fn repeat() {
+    assert_prog_output(ntoa(vec![10]),
+                       r"
+fn inc = 1 +
+0 'inc get 10 repeat
+");
+}
+
 /*
 #[test]
 fn iterative_fibonacci() {

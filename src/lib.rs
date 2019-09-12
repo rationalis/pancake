@@ -86,7 +86,9 @@ pub mod types {
         Swap,
         List,
         Map,
-        Splat
+        Splat,
+        Repeat,
+        Get
     }
 
     impl TryFrom<&str> for OpS {
@@ -101,6 +103,8 @@ pub mod types {
                     "list" => Self::List,
                     "map" => Self::Map,
                     "splat" => Self::Splat,
+                    "repeat" => Self::Repeat,
+                    "get" => Self::Get,
                     _ => { return Err("Unrecognized stack operator."); }
                 }
             )
