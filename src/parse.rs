@@ -1,30 +1,27 @@
-use regex::Regex;
-use crate::types::{Atom, NumType};
 use crate::ops::*;
+use crate::types::{Atom, NumType};
+use regex::Regex;
 
 use inlinable_string::InlinableString;
 
 use nom::{
-    IResult,
     branch::alt,
     bytes::complete::tag,
-    character::complete::*,
     character::complete::char as nomchar,
+    character::complete::*,
     combinator::{all_consuming, map, map_res, not, opt, recognize},
     multi::{many0, many1, separated_list},
-    sequence::{delimited, preceded, terminated, tuple}
+    sequence::{delimited, preceded, terminated, tuple},
+    IResult,
 };
 
 fn parse_num_nom_(token: &str) -> IResult<&str, Atom> {
     map(
-        map_res(
-            recognize(tuple(
-                (opt(nomchar('-')),
-                digit1))),
-            |s: &str| s.parse::<NumType>()
-        ),
-        Atom::Num
-    ) (&token)
+        map_res(recognize(tuple((opt(nomchar('-')), digit1))), |s: &str| {
+            s.parse::<NumType>()
+        }),
+        Atom::Num,
+    )(&token)
 }
 
 fn parse_op_(token: &str) -> Atom {
@@ -38,87 +35,80 @@ fn parse_op_(token: &str) -> Atom {
 
 fn parse_special_ident_(token: &str) -> Option<Atom> {
     use crate::types::Op;
-    Some(
-        match token {
-            "call" => Atom::Call,
-            "let" => Atom::DefOp(false),
-            "fn" => Atom::DefOp(true),
-            "true" => Atom::Bool(true),
-            "false" => Atom::Bool(false),
-            "not" => Atom::NotOp,
-            s => {
-                if let Some(op) = get_boolean_op(s) {
-                    Atom::Op(Op::new(op))
-                } else if let Some(op) = get_stack_op(s) {
-                    Atom::Op(Op::new(op))
-                } else {
-                    return None;
-                }
+    Some(match token {
+        "call" => Atom::Call,
+        "let" => Atom::DefOp(false),
+        "fn" => Atom::DefOp(true),
+        "true" => Atom::Bool(true),
+        "false" => Atom::Bool(false),
+        "not" => Atom::NotOp,
+        s => {
+            if let Some(op) = get_boolean_op(s) {
+                Atom::Op(Op::new(op))
+            } else if let Some(op) = get_stack_op(s) {
+                Atom::Op(Op::new(op))
+            } else {
+                return None;
             }
+        }
     })
 }
 
 fn parse_op_nom_(token: &str) -> IResult<&str, Atom> {
     map(
         recognize(many1(one_of("+!@#$%^&*()<>,-=_?/.|"))),
-        |s: &str| parse_op_(s)
-    ) (token)
+        |s: &str| parse_op_(s),
+    )(token)
 }
 
 fn parse_special_ident_nom_(token: &str) -> IResult<&str, Atom> {
-    map_res(
-        recognize(tuple((alpha1, alphanumeric0))),
-        |s: &str|
+    map_res(recognize(tuple((alpha1, alphanumeric0))), |s: &str| {
         if let Some(a) = parse_special_ident_(s) {
             Ok(a)
         } else {
             Err("This should never surface")
         }
-    ) (token)
+    })(token)
 }
 
 fn parse_ident_nom_(token: &str) -> IResult<&str, Atom> {
-    map_res(
-        recognize(tuple((alpha1, alphanumeric0))),
-        |s: &str| {
-            let special = not(parse_special_ident_nom_) (s);
-            if special.is_ok() {
-                Ok(Atom::Plain(InlinableString::from(s)))
-            } else {
-                Err("Unexpected reserved identifier.")
-            }
+    map_res(recognize(tuple((alpha1, alphanumeric0))), |s: &str| {
+        let special = not(parse_special_ident_nom_)(s);
+        if special.is_ok() {
+            Ok(Atom::Plain(InlinableString::from(s)))
+        } else {
+            Err("Unexpected reserved identifier.")
         }
-    ) (token)
+    })(token)
 }
 
 fn parse_symbol_nom_(token: &str) -> IResult<&str, Atom> {
-    map(
-        preceded(nomchar('\''),
-                 parse_ident_nom_),
-        |a: Atom|
+    map(preceded(nomchar('\''), parse_ident_nom_), |a: Atom| {
         if let Atom::Plain(s) = a {
             Atom::Symbol(s)
         } else {
             unreachable!()
         }
-    ) (token)
+    })(token)
 }
 
 fn parse_bracket_nom_(token: &str) -> IResult<&str, Atom> {
-    map(
-        alt((nomchar('['), nomchar(']'))),
-        |c: char| match c {
-            '[' => Atom::QuotationStart,
-            ']' => Atom::QuotationEnd,
-            _ => unreachable!()
-        }
-    ) (token)
+    map(alt((nomchar('['), nomchar(']'))), |c: char| match c {
+        '[' => Atom::QuotationStart,
+        ']' => Atom::QuotationEnd,
+        _ => unreachable!(),
+    })(token)
 }
 
 fn parse_token_nom_(token: &str) -> IResult<&str, Atom> {
-    alt((parse_bracket_nom_, parse_num_nom_, parse_symbol_nom_,
-         parse_op_nom_, parse_special_ident_nom_, parse_ident_nom_)
-    ) (token)
+    alt((
+        parse_bracket_nom_,
+        parse_num_nom_,
+        parse_symbol_nom_,
+        parse_op_nom_,
+        parse_special_ident_nom_,
+        parse_ident_nom_,
+    ))(token)
 }
 
 pub fn parse_token(token: &str) -> Atom {
@@ -137,11 +127,11 @@ pub fn parse_def(line: &str) -> Option<Vec<Atom>> {
 }
 
 fn parse_expr(expr: &str) -> Vec<Atom> {
-    let parser =
-        all_consuming(
-            delimited(multispace0,
-                      many0(terminated(parse_token_nom_, opt(multispace1))),
-                      multispace0));
+    let parser = all_consuming(delimited(
+        multispace0,
+        many0(terminated(parse_token_nom_, opt(multispace1))),
+        multispace0,
+    ));
 
     let result = parser(expr);
     let (_, v) = result.unwrap();
@@ -150,9 +140,7 @@ fn parse_expr(expr: &str) -> Vec<Atom> {
 
 fn parse_let(line: &str) -> Option<Vec<Atom>> {
     lazy_static! {
-        static ref RE: Regex =
-            Regex::new(
-                r"^let (?P<ident>[a-z]+?) = (?P<expr>.*)").unwrap();
+        static ref RE: Regex = Regex::new(r"^let (?P<ident>[a-z]+?) = (?P<expr>.*)").unwrap();
     }
     let captures = RE.captures(line);
     if let Some(caps) = captures {
@@ -163,20 +151,23 @@ fn parse_let(line: &str) -> Option<Vec<Atom>> {
         return Some(vec![
             Atom::Quotation(parse_expr(expr)),
             Atom::Symbol(ident),
-            Atom::DefVar,]);
+            Atom::DefVar,
+        ]);
     }
     None
-
 }
 
 fn parse_fn(line: &str) -> Option<Vec<Atom>> {
-    let parser =
-        preceded(tag("fn"),
-                 terminated(
-                     delimited(multispace1,
-                               separated_list(multispace1, parse_ident_nom_),
-                               multispace1),
-                     tag("="))
+    let parser = preceded(
+        tag("fn"),
+        terminated(
+            delimited(
+                multispace1,
+                separated_list(multispace1, parse_ident_nom_),
+                multispace1,
+            ),
+            tag("="),
+        ),
     );
 
     let result = parser(line);
@@ -191,12 +182,15 @@ fn parse_fn(line: &str) -> Option<Vec<Atom>> {
                 Atom::Quotation(parse_expr(expr)),
                 Atom::Symbol(ident),
                 Atom::DefFn(
-                d.map(
-                    |a| if let Atom::Plain(name) = a {
-                        name
-                    } else {
-                        unreachable!()
-                    }).collect())
+                    d.map(|a| {
+                        if let Atom::Plain(name) = a {
+                            name
+                        } else {
+                            unreachable!()
+                        }
+                    })
+                    .collect(),
+                ),
             ]);
         }
     }
@@ -232,7 +226,10 @@ fn test_special_ident_fail() {
 
 #[test]
 fn test_parse_var_name() {
-    assert_eq!(Ok(("", Atom::Plain(InlinableString::from("a")))), parse_ident_nom_("a"));
+    assert_eq!(
+        Ok(("", Atom::Plain(InlinableString::from("a")))),
+        parse_ident_nom_("a")
+    );
 }
 
 #[test]

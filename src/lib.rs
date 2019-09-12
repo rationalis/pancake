@@ -1,4 +1,5 @@
-#[macro_use] extern crate lazy_static;
+#[macro_use]
+extern crate lazy_static;
 //#[macro_use] extern crate flamer;
 
 pub mod eval;
@@ -9,8 +10,7 @@ pub mod types {
     use inlinable_string::InlinableString;
     use std::collections::HashMap;
 
-    pub const SPECIAL_IDENTS : [&str;6] = [
-        "call", "let", "fn", "true", "false", "not"];
+    pub const SPECIAL_IDENTS: [&str; 6] = ["call", "let", "fn", "true", "false", "not"];
 
     pub type NumType = i32;
     pub type Identifier = InlinableString;
@@ -56,7 +56,7 @@ pub mod types {
         Op(Op),
 
         QuotationStart, // [
-        QuotationEnd, // ]
+        QuotationEnd,   // ]
         Quotation(Vec<Atom>),
         Function(Vec<Identifier>, Vec<Atom>),
 
@@ -67,7 +67,7 @@ pub mod types {
         Call,
 
         Symbol(Identifier),
-        Plain(Identifier)
+        Plain(Identifier),
     }
 
     #[derive(Debug)]
@@ -88,10 +88,10 @@ pub mod types {
 
         fn insert(&mut self, ident: &str, atom: Atom) {
             use crate::ops;
-            if SPECIAL_IDENTS.contains(&ident) ||
-                ops::get_boolean_op(ident).is_some() ||
-                ops::get_stack_op(ident).is_some() {
-
+            if SPECIAL_IDENTS.contains(&ident)
+                || ops::get_boolean_op(ident).is_some()
+                || ops::get_stack_op(ident).is_some()
+            {
                 panic!("Attempted to rebind reserved word {}.", ident);
             }
 
@@ -106,7 +106,7 @@ pub mod types {
         pub stack: Stack,
         pub context: Context,
         pub params: Context,
-        pub lazy: bool
+        pub lazy: bool,
     }
 
     fn blank_frame() -> Frame {
@@ -114,7 +114,7 @@ pub mod types {
             stack: Stack::with_capacity(10),
             context: Context::new(),
             params: Context::new(),
-            lazy: false
+            lazy: false,
         }
     }
 

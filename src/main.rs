@@ -1,7 +1,7 @@
 use std::io;
 
 use pancake::eval::eval_line;
-use pancake::types::{Atom, Env, Op, Context};
+use pancake::types::{Atom, Context, Env, Op};
 
 fn main() {
     println!("Op size in bytes: {}", std::mem::size_of::<Op>());
@@ -12,7 +12,8 @@ fn main() {
     loop {
         let mut line = String::new();
 
-        io::stdin().read_line(&mut line)
+        io::stdin()
+            .read_line(&mut line)
             .expect("Failed to read line");
 
         eval_line(&line, &mut env);
