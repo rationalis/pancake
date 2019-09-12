@@ -2,52 +2,56 @@ use crate::types::{Atom, Env, OpA, OpB, OpS};
 use crate::eval::{eval_call, eval_function};
 
 macro_rules! eval_op {
-    ( $op:tt, $wrap:path, $env:ident ) => {
+    ( $op:tt, $wrap:path) => {
         {
-            let b = $env.pop_atom();
-            let a = $env.pop_atom();
-            if let ($wrap(unwrapped_a), $wrap(unwrapped_b)) = (a,b) {
-                $env.push_atom($wrap(unwrapped_a $op unwrapped_b));
-            } else {
-                panic!("Wrong number or types of arguments for operation.");
-            };
+            |env: &mut Env| {
+                let b = env.pop_atom();
+                let a = env.pop_atom();
+                if let ($wrap(unwrapped_a), $wrap(unwrapped_b)) = (a,b) {
+                    env.push_atom($wrap(unwrapped_a $op unwrapped_b));
+                } else {
+                    panic!("Wrong number or types of arguments for operation.");
+                };
+            }
         }
     };
-    ( $op:tt, $wrap:path, $wrap2:path, $env:ident ) => {
+    ( $op:tt, $wrap:path, $wrap2:path) => {
         {
-            let b = $env.pop_atom();
-            let a = $env.pop_atom();
-            if let ($wrap(unwrapped_a), $wrap(unwrapped_b)) = (a,b) {
-                $env.push_atom($wrap2(unwrapped_a $op unwrapped_b));
-            } else {
-                panic!("Wrong number or types of arguments for operation.");
-            };
+            |env: &mut Env| {
+                let b = env.pop_atom();
+                let a = env.pop_atom();
+                if let ($wrap(unwrapped_a), $wrap(unwrapped_b)) = (a,b) {
+                    env.push_atom($wrap2(unwrapped_a $op unwrapped_b));
+                } else {
+                    panic!("Wrong number or types of arguments for operation.");
+                };
+            }
         }
     };
 }
 
-pub fn eval_arithmetic_op(op: OpA, env: &mut Env) {
+pub fn eval_arithmetic_op(op: OpA) -> fn(&mut Env) {
     use OpA::*;
     match op {
-        Add => eval_op!(+, Atom::Num, env),
-        Sub => eval_op!(-, Atom::Num, env),
-        Mult => eval_op!(*, Atom::Num, env),
-        Div => eval_op!(/, Atom::Num, env),
-        Mod => eval_op!(%, Atom::Num, env),
-        Less => eval_op!(<, Atom::Num, Atom::Bool, env),
-        Greater => eval_op!(>, Atom::Num, Atom::Bool, env),
-        LEq => eval_op!(<=, Atom::Num, Atom::Bool, env),
-        GEq => eval_op!(>=, Atom::Num, Atom::Bool, env),
-        Eq => eval_op!(==, Atom::Num, Atom::Bool, env),
+        Add => eval_op!(+, Atom::Num),
+        Sub => eval_op!(-, Atom::Num),
+        Mult => eval_op!(*, Atom::Num),
+        Div => eval_op!(/, Atom::Num),
+        Mod => eval_op!(%, Atom::Num),
+        Less => eval_op!(<, Atom::Num, Atom::Bool),
+        Greater => eval_op!(>, Atom::Num, Atom::Bool),
+        LEq => eval_op!(<=, Atom::Num, Atom::Bool),
+        GEq => eval_op!(>=, Atom::Num, Atom::Bool),
+        Eq => eval_op!(==, Atom::Num, Atom::Bool),
     }
 }
 
-pub fn eval_boolean_op(op: OpB, env: &mut Env) {
+pub fn eval_boolean_op(op: OpB) -> fn(&mut Env) {
     use OpB::*;
     match op {
-        And => eval_op!(&&, Atom::Bool, env),
-        Or => eval_op!(||, Atom::Bool, env),
-        Cond => {
+        And => eval_op!(&&, Atom::Bool),
+        Or => eval_op!(||, Atom::Bool),
+        Cond => |env| {
             let else_branch = env.pop_atom();
             let if_branch = env.pop_atom();
             let condition = env.pop_atom();
@@ -61,7 +65,7 @@ pub fn eval_boolean_op(op: OpB, env: &mut Env) {
                 }
             }
         },
-        If =>  {
+        If => |env| {
             let body = env.pop_atom();
             let condition = env.pop_atom();
             if let (Atom::Quotation(body_q),
@@ -74,29 +78,29 @@ pub fn eval_boolean_op(op: OpB, env: &mut Env) {
     }
 }
 
-pub fn eval_stack_op(op: OpS, env: &mut Env) {
+pub fn eval_stack_op(op: OpS) -> fn(&mut Env) {
     use OpS::*;
     match op {
-        Dup => {
+        Dup => |env| {
             let a = env.pop_atom();
             env.push_atom(a.clone());
             env.push_atom(a);
         },
-        Drop => { env.pop_atom(); },
-        Swap => {
+        Drop => |env| { env.pop_atom(); },
+        Swap => |env| {
             let a = env.pop_atom();
             let b = env.pop_atom();
             env.push_atom(a);
             env.push_atom(b);
         },
-        List => {
+        List => |env| {
             let q = env.pop_atom();
             env.push_blank(false);
             eval_call(q, env);
             let stack = env.pop().unwrap().stack;
             env.push_atom(Atom::List(stack));
         },
-        Map => {
+        Map => |env| {
             let q = env.pop_atom();
             let l = env.pop_atom();
             if let Atom::List(list) = l {
@@ -111,13 +115,13 @@ pub fn eval_stack_op(op: OpS, env: &mut Env) {
                 panic!("Expected list for map.");
             }
         },
-        Splat => {
+        Splat => |env| {
             let l = env.pop_atom();
             if let Atom::List(list) = l {
                 env.append_atoms(list)
             }
         },
-        Repeat => {
+        Repeat => |env| {
             let n = env.pop_atom();
             let q = env.pop_atom();
             if let Atom::Num(times) = n {
@@ -126,7 +130,7 @@ pub fn eval_stack_op(op: OpS, env: &mut Env) {
                 }
             }
         },
-        Get => {
+        Get => |env| {
             if let Atom::Symbol(ident) = env.pop_atom() {
                 match env.find_var(&ident) {
                     Some(Atom::Function(_, body)) =>

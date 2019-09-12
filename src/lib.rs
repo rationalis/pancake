@@ -111,6 +111,41 @@ pub mod types {
         }
     }
 
+    #[derive(Clone)]
+    pub struct Op(fn(&mut Env));
+
+    use std::fmt;
+    impl fmt::Debug for Op {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            write!(f, "Op {}", self.0 as usize)
+        }
+    }
+
+    impl PartialEq for Op {
+        fn eq(&self, other: &Self) -> bool {
+            self.0 as usize == other.0 as usize
+        }
+    }
+
+    impl Eq for Op {}
+
+    impl Op {
+        pub fn new(f: fn(&mut Env)) -> Self {
+            Self(f)
+        }
+        pub fn f(&self) -> fn(&mut Env) {
+            self.0
+        }
+    }
+
+
+    // impl Clone for Op {
+    //     fn clone(&self) -> Self {
+    //         *self
+    //     }
+    // }
+
+
     #[derive(Debug, Clone, Eq, PartialEq)]
     pub enum Atom {
         Bool(bool),
@@ -119,9 +154,7 @@ pub mod types {
         List(Vec<Atom>),
 
         NotOp,
-        BooleanOp(OpB),
-        ArithmeticOp(OpA),
-        StackOp(OpS),
+        Op(Op),
 
         QuotationStart, // [
         QuotationEnd, // ]

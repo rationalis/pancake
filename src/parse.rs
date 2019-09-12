@@ -29,14 +29,21 @@ fn parse_num_nom_(token: &str) -> IResult<&str, Atom> {
 }
 
 fn parse_op_(token: &str) -> Atom {
+    use crate::types::Op;
+    use crate::ops::eval_arithmetic_op as get_op;
+
     if let Ok(op) = OpA::try_from(token) {
-        Atom::ArithmeticOp(op)
+        Atom::Op(Op::new(get_op(op)))
     } else {
         panic!("Unrecognized operator '{}'", token);
     }
 }
 
 fn parse_special_ident_(token: &str) -> Option<Atom> {
+    use crate::types::Op;
+    use crate::ops::eval_boolean_op as get_bool_op;
+    use crate::ops::eval_stack_op as get_stack_op;
+
     Some(
         match token {
             "call" => Atom::Call,
@@ -47,9 +54,9 @@ fn parse_special_ident_(token: &str) -> Option<Atom> {
             "not" => Atom::NotOp,
             s => {
                 if let Ok(op) = OpB::try_from(s) {
-                    Atom::BooleanOp(op)
+                    Atom::Op(Op::new(get_bool_op(op)))
                 } else if let Ok(op) = OpS::try_from(s) {
-                    Atom::StackOp(op)
+                    Atom::Op(Op::new(get_stack_op(op)))
                 } else {
                     return None;
                 }

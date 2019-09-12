@@ -1,9 +1,13 @@
 use std::io;
 
 use pancake::eval::eval_line;
-use pancake::types::Env;
+use pancake::types::{Atom, Env, OpA, Context};
 
 fn main() {
+    println!("OpA size in bytes: {}", std::mem::size_of::<OpA>());
+    println!("Context size in bytes: {}", std::mem::size_of::<Context>());
+    println!("Atom size in bytes: {}", std::mem::size_of::<Atom>());
+    println!("Env size in bytes: {}", std::mem::size_of::<Env>());
     let mut env = Env::new();
     loop {
         let mut line = String::new();

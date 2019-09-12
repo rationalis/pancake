@@ -37,9 +37,7 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
     } 
 
     match atom {
-        Atom::ArithmeticOp(c) => ops::eval_arithmetic_op(c, env),
-        Atom::BooleanOp(s) => ops::eval_boolean_op(s, env),
-        Atom::StackOp(s) => ops::eval_stack_op(s, env),
+        Atom::Op(op) => {op.f()(env);},
         Atom::NotOp => {
             if let Atom::Bool(b) = env.pop_atom() {
                 env.push_atom(Atom::Bool(!b));
