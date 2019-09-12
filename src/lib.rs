@@ -128,8 +128,8 @@ pub mod types {
         Quotation(Vec<Atom>),
         Function(Vec<Identifier>, Vec<Atom>),
 
-        DefVar(Identifier, Vec<Atom>),
-        DefFn(Identifier, Vec<Identifier>, Vec<Atom>),
+        DefVar,
+        DefFn(Vec<Identifier>),
         DefOp(IsFunction),
 
         Call,

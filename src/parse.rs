@@ -125,7 +125,7 @@ pub fn parse_token(token: &str) -> Atom {
 }
 
 /// Parse a line definition of a variable like `let a = 100` or `fn inc = 1 +`.
-pub fn parse_def(line: &str) -> Option<Atom> {
+pub fn parse_def(line: &str) -> Option<Vec<Atom>> {
     if let Some(a) = parse_let(line) {
         Some(a)
     } else if let Some(a) = parse_fn(line) {
@@ -147,7 +147,7 @@ fn parse_expr(expr: &str) -> Vec<Atom> {
     v
 }
 
-fn parse_let(line: &str) -> Option<Atom> {
+fn parse_let(line: &str) -> Option<Vec<Atom>> {
     lazy_static! {
         static ref RE: Regex =
             Regex::new(
@@ -159,13 +159,16 @@ fn parse_let(line: &str) -> Option<Atom> {
         let ident = InlinableString::from(&caps["ident"]);
         let expr = &caps["expr"];
 
-        return Some(Atom::DefVar(ident, parse_expr(expr)));
+        return Some(vec![
+            Atom::Quotation(parse_expr(expr)),
+            Atom::Symbol(ident),
+            Atom::DefVar,]);
     }
     None
 
 }
 
-fn parse_fn(line: &str) -> Option<Atom> {
+fn parse_fn(line: &str) -> Option<Vec<Atom>> {
     let parser =
         preceded(tag("fn"),
                  terminated(
@@ -183,15 +186,17 @@ fn parse_fn(line: &str) -> Option<Atom> {
         let v0: Atom = d.next().unwrap();
 
         if let Atom::Plain(ident) = v0 {
-            return Some(Atom::DefFn(
-                ident,
+            return Some(vec![
+                Atom::Quotation(parse_expr(expr)),
+                Atom::Symbol(ident),
+                Atom::DefFn(
                 d.map(
                     |a| if let Atom::Plain(name) = a {
                         name
                     } else {
                         unreachable!()
-                    }).collect(),
-                parse_expr(expr)));
+                    }).collect())
+            ]);
         }
     }
 
@@ -204,8 +209,8 @@ pub fn parse_line(line: &str) -> Vec<Atom> {
         return Vec::new();
     }
 
-    if let Some(atom) = parse_def(line) {
-        return vec![atom];
+    if let Some(v) = parse_def(line) {
+        return v;
     }
 
     parse_expr(line)

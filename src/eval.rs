@@ -58,14 +58,26 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
         Atom::Function(params, body) => {
             eval_function(params, body, env);
         },
-        Atom::DefVar(ident, expr) => {
-            let result_of_expr = eval_with_new_scope(expr, env, false);
-            env.bind_var(&ident, result_of_expr);
+        Atom::DefVar => {
+            let a = env.pop_atom();
+            let b = env.pop_atom();
+            if let (Atom::Symbol(ident), Atom::Quotation(expr)) = (a, b) {
+                let result_of_expr = eval_with_new_scope(expr, env, false);
+                env.bind_var(&ident, result_of_expr);
+            } else {
+                unreachable!();
+            }
         },
-        Atom::DefFn(ident, params, expr) => {
-            let result_of_expr = eval_with_new_scope(expr, env, true);
-            if let Atom::Quotation(q) = result_of_expr {
-                env.bind_var(&ident, Atom::Function(params, q));
+        Atom::DefFn(params) => {
+            let a = env.pop_atom();
+            let b = env.pop_atom();
+            if let (Atom::Symbol(ident), Atom::Quotation(expr)) = (a, b) {
+                let result_of_expr = eval_with_new_scope(expr, env, true);
+                if let Atom::Quotation(q) = result_of_expr {
+                    env.bind_var(&ident, Atom::Function(params, q));
+                } else {
+                    unreachable!();
+                }
             } else {
                 unreachable!();
             }
