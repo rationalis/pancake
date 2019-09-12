@@ -62,7 +62,7 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
             let a = env.pop_atom();
             let b = env.pop_atom();
             if let (Atom::Symbol(ident), Atom::Quotation(expr)) = (a, b) {
-                let result_of_expr = eval_with_new_scope(expr, env, false);
+                let result_of_expr = eval_with_new_scope(expr, env);
                 env.bind_var(&ident, result_of_expr);
             } else {
                 unreachable!();
@@ -72,8 +72,7 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
             let a = env.pop_atom();
             let b = env.pop_atom();
             if let (Atom::Symbol(ident), Atom::Quotation(expr)) = (a, b) {
-                let result_of_expr = eval_with_new_scope(expr, env, true);
-                if let Atom::Quotation(q) = result_of_expr {
+                if let Atom::Quotation(q) = make_fn_q(expr, env) {
                     env.bind_var(&ident, Atom::Function(params, q));
                 } else {
                     unreachable!();
@@ -111,15 +110,36 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
     }
 }
 
-pub fn eval_with_new_scope(expr: Vec<Atom>, env: &mut Env, is_fn: bool)
-                           -> Atom {
-    env.push_blank(false);
+// TODO: Figure out what's happening here
+fn make_fn_q(expr: Vec<Atom>, env: &mut Env) -> Atom {
+    // Implementation 1
+    // return Atom::Quotation(expr);
 
-    if is_fn { eval_atom(Atom::QuotationStart, env); }
+    // For some reason, this is the fastest of these three implementations.
+    // Except, as far as I can tell, this one should be doing the most work,
+    // since it should perform at least as many allocations, but with multiple
+    // additional calls to functions that do more stuff.
+    eval_atom(Atom::QuotationStart, env);
     for atom in expr {
         eval_atom(atom, env);
     }
-    if is_fn { eval_atom(Atom::QuotationEnd, env); }
+    eval_atom(Atom::QuotationEnd, env);
+    env.pop_atom()
+
+    // Implementation 3
+    // let v = Vec::new();
+    // for atom in expr {
+    //     v.push(atom);
+    // }
+    // Atom::Quotation(v)
+}
+
+pub fn eval_with_new_scope(expr: Vec<Atom>, env: &mut Env) -> Atom {
+    env.push_blank(false);
+
+    for atom in expr {
+        eval_atom(atom, env);
+    }
 
     let mut stack : Stack = env.pop().unwrap().stack;
     if let Some(atom) = stack.pop() {

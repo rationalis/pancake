@@ -178,7 +178,7 @@ pub mod types {
 
     fn blank_frame() -> Frame {
         Frame {
-            stack: Stack::new(),
+            stack: Stack::with_capacity(10),
             context: Context::new(),
             params: Context::new(),
             lazy: false
