@@ -1,7 +1,6 @@
-use std::convert::TryFrom;
-
 use regex::Regex;
-use crate::types::{Atom, NumType, OpA, OpB, OpS};
+use crate::types::{Atom, NumType};
+use crate::ops::*;
 
 use inlinable_string::InlinableString;
 
@@ -30,10 +29,8 @@ fn parse_num_nom_(token: &str) -> IResult<&str, Atom> {
 
 fn parse_op_(token: &str) -> Atom {
     use crate::types::Op;
-    use crate::ops::eval_arithmetic_op as get_op;
-
-    if let Ok(op) = OpA::try_from(token) {
-        Atom::Op(Op::new(get_op(op)))
+    if let Some(op) = get_arithmetic_op(token) {
+        Atom::Op(Op::new(op))
     } else {
         panic!("Unrecognized operator '{}'", token);
     }
@@ -41,9 +38,6 @@ fn parse_op_(token: &str) -> Atom {
 
 fn parse_special_ident_(token: &str) -> Option<Atom> {
     use crate::types::Op;
-    use crate::ops::eval_boolean_op as get_bool_op;
-    use crate::ops::eval_stack_op as get_stack_op;
-
     Some(
         match token {
             "call" => Atom::Call,
@@ -53,10 +47,10 @@ fn parse_special_ident_(token: &str) -> Option<Atom> {
             "false" => Atom::Bool(false),
             "not" => Atom::NotOp,
             s => {
-                if let Ok(op) = OpB::try_from(s) {
-                    Atom::Op(Op::new(get_bool_op(op)))
-                } else if let Ok(op) = OpS::try_from(s) {
-                    Atom::Op(Op::new(get_stack_op(op)))
+                if let Some(op) = get_boolean_op(s) {
+                    Atom::Op(Op::new(op))
+                } else if let Some(op) = get_stack_op(s) {
+                    Atom::Op(Op::new(op))
                 } else {
                     return None;
                 }

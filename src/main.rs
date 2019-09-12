@@ -1,10 +1,10 @@
 use std::io;
 
 use pancake::eval::eval_line;
-use pancake::types::{Atom, Env, OpA, Context};
+use pancake::types::{Atom, Env, Op, Context};
 
 fn main() {
-    println!("OpA size in bytes: {}", std::mem::size_of::<OpA>());
+    println!("Op size in bytes: {}", std::mem::size_of::<Op>());
     println!("Context size in bytes: {}", std::mem::size_of::<Context>());
     println!("Atom size in bytes: {}", std::mem::size_of::<Atom>());
     println!("Env size in bytes: {}", std::mem::size_of::<Env>());

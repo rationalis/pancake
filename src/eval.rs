@@ -1,4 +1,3 @@
-use crate::ops;
 use crate::types::{Atom, Stack, Env, Identifier};
 use crate::parse::*;
 
