@@ -12,7 +12,7 @@ pub fn eval_call(quotation: Atom, env: &mut Env) {
     }
 }
 
-fn eval_function(params: Vec<Identifier>, body: Stack, env: &mut Env) {
+pub fn eval_function(params: Vec<Identifier>, body: Stack, env: &mut Env) {
     if params.is_empty() {
         eval_call(Atom::Quotation(body), env);
     } else {

@@ -1,5 +1,5 @@
 use crate::types::{Atom, Env, OpA, OpB, OpS};
-use crate::eval::eval_atom;
+use crate::eval::eval_function;
 
 macro_rules! eval_op {
     ( $op:tt, $wrap:path, $env:ident ) => {
@@ -55,9 +55,9 @@ pub fn eval_boolean_op(op: OpB, env: &mut Env) {
                     Atom::Quotation(if_q),
                     Atom::Bool(cond)) = (else_branch, if_branch, condition) {
                 if cond {
-                    eval_atom(Atom::Function(Vec::new(), if_q), env);
+                    eval_function(Vec::new(), if_q, env);
                 } else {
-                    eval_atom(Atom::Function(Vec::new(), else_q), env);
+                    eval_function(Vec::new(), else_q, env);
                 }
             }
         },
@@ -67,7 +67,7 @@ pub fn eval_boolean_op(op: OpB, env: &mut Env) {
             if let (Atom::Quotation(body_q),
                     Atom::Bool(cond)) = (body, condition) {
                 if cond {
-                    eval_atom(Atom::Function(Vec::new(), body_q), env);
+                    eval_function(Vec::new(), body_q, env);
                 }
             }
         }
