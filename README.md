@@ -88,8 +88,8 @@ assembly are out of scope.
     - Both of these consume the boolean before evaluating quotations.
 
 - [ ] Composite Types
-  - [ ] Lists
-    - [ ] `[ a b c ] list` evaluates `a b c` and constructs a list from the
+  - [x] Lists
+    - [x] `[ a b c ] list` evaluates `a b c` and constructs a list from the
           result.
     - [ ] `[ 1 2 3 ] list 4 append = [ 1 2 3 4 ] list`
     - [ ] `map` `fold` `reduce`
