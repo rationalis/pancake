@@ -12,6 +12,8 @@ about it.
 Fun fact: `pancake` uses the parser library `nom`. No, this joke has not gone
 too far.
 
+[Click here for the reference.](reference.md)
+
 ## Motivation
 
 I want to learn Rust and design a simple programming language. Why not both at

@@ -31,8 +31,8 @@ Operations on booleans: and, or, not
 
 There are some basic operations which can be used to manipulate the stack.
 
-`dup`; duplicate; `1 dup` == `1 1`
-`drop`; `1 2 3 drop` == `1 2`
+`dup`; duplicate; `1 dup` == `1 1`\
+`drop`; `1 2 3 drop` == `1 2`\
 `swap`; `1 2 swap` == `2 1`
 
 ## Quotations
@@ -49,8 +49,8 @@ we can only manipulate the elements at the top of the stack, it quickly becomes
 unmanageable to handle even a handful of values. Thus, Pancake supports basic
 named variables as follows:
 
-`let a = 1 1 +` (== `let a = 2`)
-`fn increment = 1 +`
+`let a = 1 1 +` (== `let a = 2`)\
+`fn increment = 1 +`\
 `a increment` == `3`
 
 A few notes:
@@ -93,8 +93,8 @@ TODO: Document the exact semantics of scoping.
 
 ## Control Flow
 
-`cond`: `true q1 q2 cond` == `q1 call`, `false q1 q2 cond` == `q2 call`
-`if`: `true q if` == `q call` (`false q if` is a no-op)
+`cond`: `true q1 q2 cond` == `q1 call`, `false q1 q2 cond` == `q2 call`\
+`if`: `true q if` == `q call` (`false q if` is a no-op)\
 `repeat`: `0 [1 +] 10 repeat` == `10`
 
 ## Lists
