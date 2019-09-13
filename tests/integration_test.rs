@@ -147,14 +147,32 @@ fn inc = 1 +
 }
 
 /*
-#[test]
-fn iterative_fibonacci() {
-    assert_prog_output(vec![3,7,6,8],
-                       r"
-fn fibo n = [ dup rot3 + ] n repeat swap drop
-fn fib n = 1 1 n 2 -
-1 fib 2 fib 3 fib 4 fib 5 fib
-");
+TODO: adj_pairs, all, pop_back, append, fold
+TODO: pattern matching, : for special parse semantics
+TODO: \ for multiline
 
+#[test]
+fn bubblesort() {
+    assert_prog_output(
+        ntoa(vec![10]),
+        r"
+fn sorted = adj_pairs [<=] map all
+# maybe implement a way to make quotations non-consuming
+fn fix a b = a b a b > [swap] if
+fn bubblesort (x:xs) = [x] xs [pop_back fix append append] fold \
+if: not sorted [bubblesort]
+",
+    );
 }
 */
+
+#[test]
+fn iterative_fibonacci() {
+    assert_prog_output(
+        ntoa(vec![1,1,2,3,5]),
+        r"
+fn fib n = 1 1 [ dup rot3 + ] n 2 - repeat swap drop
+1 fib 2 fib 3 fib 4 fib 5 fib
+",
+    );
+}

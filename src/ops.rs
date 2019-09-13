@@ -59,11 +59,8 @@ pub fn get_boolean_op(op: &str) -> Option<fn(&mut Env)> {
             if let (Atom::Quotation(else_q), Atom::Quotation(if_q), Atom::Bool(cond)) =
                 (else_branch, if_branch, condition)
             {
-                if cond {
-                    eval_function(Vec::new(), if_q, env);
-                } else {
-                    eval_function(Vec::new(), else_q, env);
-                }
+                let q = if cond { if_q } else { else_q };
+                eval_function(Vec::new(), q, env);
             }
         },
         "if" => |env| {
@@ -96,6 +93,15 @@ pub fn get_stack_op(op: &str) -> Option<fn(&mut Env)> {
             let b = env.pop_atom();
             env.push_atom(a);
             env.push_atom(b);
+        },
+        "rot3" => |env| {
+            let c = env.pop_atom();
+            let b = env.pop_atom();
+            let a = env.pop_atom();
+            // a b c -- b c a
+            env.push_atom(b);
+            env.push_atom(c);
+            env.push_atom(a);
         },
         "list" => |env| {
             let q = env.pop_atom();

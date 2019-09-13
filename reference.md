@@ -31,9 +31,10 @@ Operations on booleans: and, or, not
 
 There are some basic operations which can be used to manipulate the stack.
 
-`dup`; duplicate; `1 dup` == `1 1`\
+`dup` (duplicate); `1 dup` == `1 1`\
 `drop`; `1 2 3 drop` == `1 2`\
 `swap`; `1 2 swap` == `2 1`
+`rot3`; `1 2 3 rot3` == `2 3 1`
 
 ## Quotations
 
