@@ -56,13 +56,20 @@ fn parse_special_ident_(token: &str) -> Option<Atom> {
 
 fn parse_op_nom_(token: &str) -> IResult<&str, Atom> {
     map(
-        recognize(many1(one_of("+!@#$%^&*()<>,-=_?/.|"))),
+        recognize(many1(one_of("+!@#$%^&*()<>,-=?/.|"))),
         |s: &str| parse_op_(s),
     )(token)
 }
 
+fn recognize_ident_nom_(token: &str) -> IResult<&str, &str> {
+    let valid_char = alt((alphanumeric1, tag("_")));
+    let valid_chars = many0(valid_char);
+    let valid_starting = tuple((alpha1, valid_chars));
+    recognize(valid_starting)(token)
+}
+
 fn parse_special_ident_nom_(token: &str) -> IResult<&str, Atom> {
-    map_res(recognize(tuple((alpha1, alphanumeric0))), |s: &str| {
+    map_res(recognize_ident_nom_, |s: &str| {
         if let Some(a) = parse_special_ident_(s) {
             Ok(a)
         } else {
@@ -72,7 +79,7 @@ fn parse_special_ident_nom_(token: &str) -> IResult<&str, Atom> {
 }
 
 fn parse_ident_nom_(token: &str) -> IResult<&str, Atom> {
-    map_res(recognize(tuple((alpha1, alphanumeric0))), |s: &str| {
+    map_res(recognize_ident_nom_, |s: &str| {
         let special = not(parse_special_ident_nom_)(s);
         if special.is_ok() {
             Ok(Atom::Plain(InlinableString::from(s)))
@@ -140,7 +147,7 @@ fn parse_expr(expr: &str) -> Vec<Atom> {
 
 fn parse_let(line: &str) -> Option<Vec<Atom>> {
     lazy_static! {
-        static ref RE: Regex = Regex::new(r"^let (?P<ident>[a-z]+?) = (?P<expr>.*)").unwrap();
+        static ref RE: Regex = Regex::new(r"^let (?P<ident>[a-z_]+?) = (?P<expr>.*)").unwrap();
     }
     let captures = RE.captures(line);
     if let Some(caps) = captures {

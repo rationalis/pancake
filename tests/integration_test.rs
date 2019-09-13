@@ -146,30 +146,25 @@ fn inc = 1 +
     );
 }
 
-/*
-TODO: adj_pairs, all, reduce
+#[test]
+fn iterative_fibonacci() {
+    assert_prog_output(
+        ntoa(vec![1, 1, 2, 3, 5]),
+        r"
+fn fib n = 1 1 [ dup rot3 + ] n 2 - repeat swap drop
+1 fib 2 fib 3 fib 4 fib 5 fib
+",
+    );
+}
 
 #[test]
 fn bubblesort() {
     assert_prog_output(
-        ntoa(vec![10]),
+        ntoa(vec![0, 1, 2, 3, 4, 5]),
         r"
-fn sorted = adj_pairs [<=] map all
-# maybe implement a way to make quotations non-consuming
 fn fix a b = a b a b > [swap] if
-fn bubblesort = [fix] reduce sorted not [bubblesort] if
-",
-    );
-}
-*/
-
-#[test]
-fn iterative_fibonacci() {
-    assert_prog_output(
-        ntoa(vec![1,1,2,3,5]),
-        r"
-fn fib n = 1 1 [ dup rot3 + ] n 2 - repeat swap drop
-1 fib 2 fib 3 fib 4 fib 5 fib
+fn bubblesort = [fix] reduce [bubblesort] for_if
+[1 3 2 5 4 0]list bubblesort splat
 ",
     );
 }

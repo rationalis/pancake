@@ -42,6 +42,7 @@ pub fn get_arithmetic_op(op: &str) -> Option<fn(&mut Env)> {
         "<=" => eval_op!(<=, Atom::Num, Atom::Bool),
         ">=" => eval_op!(>=, Atom::Num, Atom::Bool),
         "=" => eval_op!(==, Atom::Num, Atom::Bool),
+        "!=" => eval_op!(!=, Atom::Num, Atom::Bool),
         _ => {
             return None;
         }
@@ -64,11 +65,17 @@ pub fn get_boolean_op(op: &str) -> Option<fn(&mut Env)> {
             }
         },
         "if" => |env| {
+            if env.loop_like {
+                env.using_for_else = true;
+            }
             let body = env.pop_atom();
             let condition = env.pop_atom();
             if let (Atom::Quotation(body_q), Atom::Bool(cond)) = (body, condition) {
                 if cond {
                     eval_function(Vec::new(), body_q, env);
+                    if env.loop_like {
+                        env.for_else = false;
+                    }
                 }
             }
         },
@@ -111,6 +118,8 @@ pub fn get_stack_op(op: &str) -> Option<fn(&mut Env)> {
             env.push_atom(Atom::List(stack));
         },
         "map" => |env| {
+            env.for_else = true;
+            env.loop_like = true;
             let q = env.pop_atom();
             let l = env.pop_atom();
             if let Atom::List(list) = l {
@@ -125,8 +134,32 @@ pub fn get_stack_op(op: &str) -> Option<fn(&mut Env)> {
                     .collect();
                 env.push_atom(Atom::List(new_list));
             } else {
-                panic!("Expected list for map.");
+                panic!("Expected list quotation map.");
             }
+            env.loop_like = false;
+        },
+        "reduce" => |env| {
+            env.for_else = true;
+            env.loop_like = true;
+            let q = env.pop_atom();
+            let l = env.pop_atom();
+            if let Atom::List(mut list) = l {
+                env.push_blank(false);
+                let mut list = list.drain(..);
+                let first = list.next();
+                if let Some(a) = first {
+                    env.push_atom(a);
+                    for atom in list {
+                        env.push_atom(atom);
+                        eval_call(q.clone(), env);
+                    }
+                    let res: Vec<Atom> = env.pop().unwrap().stack;
+                    env.push_atom(Atom::List(res));
+                }
+            } else {
+                panic!("Expected list quotation reduce.");
+            }
+            env.loop_like = false;
         },
         "splat" => |env| {
             let l = env.pop_atom();
@@ -135,11 +168,36 @@ pub fn get_stack_op(op: &str) -> Option<fn(&mut Env)> {
             }
         },
         "repeat" => |env| {
+            env.for_else = true;
+            env.loop_like = true;
             let n = env.pop_atom();
             let q = env.pop_atom();
             if let Atom::Num(times) = n {
                 for _ in 0..times {
                     eval_call(q.clone(), env);
+                }
+            }
+            env.loop_like = false;
+        },
+        "for_else" => |env| {
+            if !env.using_for_else {
+                panic!("No conditionals used by loop-like combinator.")
+            }
+            let body = env.pop_atom();
+            if let Atom::Quotation(body_q) = body {
+                if env.for_else {
+                    eval_function(Vec::new(), body_q, env);
+                }
+            }
+        },
+        "for_if" => |env| {
+            if !env.using_for_else {
+                panic!("No conditionals used by loop-like combinator.")
+            }
+            let body = env.pop_atom();
+            if let Atom::Quotation(body_q) = body {
+                if !env.for_else {
+                    eval_function(Vec::new(), body_q, env);
                 }
             }
         },

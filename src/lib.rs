@@ -119,15 +119,25 @@ pub mod types {
     }
 
     #[derive(Debug, Default)]
-    pub struct Env(Vec<Frame>);
+    pub struct Env {
+        frames: Vec<Frame>,
+        pub loop_like: bool,
+        pub using_for_else: bool,
+        pub for_else: bool,
+    }
 
     impl Env {
         pub fn new() -> Env {
-            Env(vec![blank_frame()])
+            Env {
+                frames: vec![blank_frame()],
+                loop_like: false,
+                using_for_else: false,
+                for_else: true,
+            }
         }
 
         fn last_frame(&mut self) -> &mut Frame {
-            if let Some(frame) = self.0.last_mut() {
+            if let Some(frame) = self.frames.last_mut() {
                 frame
             } else {
                 panic!("Tried to get a frame from an empty stack.")
@@ -153,11 +163,11 @@ pub mod types {
         pub fn push_blank(&mut self, lazy: bool) {
             let mut f = blank_frame();
             f.lazy = lazy;
-            self.0.push(f)
+            self.frames.push(f)
         }
 
         pub fn pop(&mut self) -> Option<Frame> {
-            self.0.pop()
+            self.frames.pop()
         }
 
         pub fn bind_var(&mut self, ident: &str, atom: Atom) {
@@ -179,12 +189,12 @@ pub mod types {
         }
 
         pub fn find_var(&self, ident: &Identifier) -> Option<Atom> {
-            if let Some(f) = self.0.last() {
+            if let Some(f) = self.frames.last() {
                 if let Some(atom) = f.params.get(ident) {
                     return Some(atom.clone());
                 }
             }
-            for frame in self.0.iter().rev() {
+            for frame in self.frames.iter().rev() {
                 let context = &frame.context;
                 if let Some(atom) = context.get(ident) {
                     return Some(atom.clone());
@@ -194,7 +204,7 @@ pub mod types {
         }
 
         pub fn lazy_mode(&self) -> bool {
-            self.0.last().unwrap().lazy
+            self.frames.last().unwrap().lazy
         }
     }
 }
