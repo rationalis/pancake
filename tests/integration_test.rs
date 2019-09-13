@@ -147,9 +147,7 @@ fn inc = 1 +
 }
 
 /*
-TODO: adj_pairs, all, pop_back, append, fold
-TODO: pattern matching, : for special parse semantics
-TODO: \ for multiline
+TODO: adj_pairs, all, reduce
 
 #[test]
 fn bubblesort() {
@@ -159,8 +157,7 @@ fn bubblesort() {
 fn sorted = adj_pairs [<=] map all
 # maybe implement a way to make quotations non-consuming
 fn fix a b = a b a b > [swap] if
-fn bubblesort (x:xs) = [x] xs [pop_back fix append append] fold \
-if: not sorted [bubblesort]
+fn bubblesort = [fix] reduce sorted not [bubblesort] if
 ",
     );
 }
