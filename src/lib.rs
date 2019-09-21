@@ -61,8 +61,8 @@ pub mod types {
         Function(Vec<Identifier>, Vec<Atom>),
 
         DefVar,
-        DefFn(Vec<Identifier>),
-        DefOp(IsFunction),
+        DefVarLiteral,
+        DefFnLiteral,
 
         Call,
 

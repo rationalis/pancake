@@ -51,9 +51,6 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
             let quotation = Atom::Quotation(stack);
             env.push_atom(quotation);
         }
-        Atom::Function(params, body) => {
-            eval_function(params, body, env);
-        }
         Atom::DefVar => {
             let a = env.pop_atom();
             let b = env.pop_atom();
@@ -64,32 +61,22 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
                 unreachable!();
             }
         }
-        Atom::DefFn(params) => {
+        Atom::DefVarLiteral => {
             let a = env.pop_atom();
             let b = env.pop_atom();
-            if let (Atom::Symbol(ident), Atom::Quotation(expr)) = (a, b) {
-                if let Atom::Quotation(q) = make_fn_q(expr, env) {
-                    env.bind_var(&ident, Atom::Function(params, q));
-                } else {
-                    unreachable!();
-                }
-            } else {
-                unreachable!();
-            }
-        }
-        Atom::DefOp(is_function) => {
-            let a = env.pop_atom();
-            let b = env.pop_atom();
-            if is_function {
-                if let (Atom::Symbol(ident), Atom::Quotation(q)) = (a, b) {
-                    env.bind_var(&ident, Atom::Function(Vec::new(), q));
-                } else {
-                    panic!("Expected '<quotation> <ident> fn'.")
-                }
-            } else if let Atom::Symbol(ident) = a {
+            if let Atom::Symbol(ident) = a {
                 env.bind_var(&ident, b);
             } else {
                 panic!("Expected '<value> <ident> let'.")
+            }
+        }
+        Atom::DefFnLiteral => {
+            let a = env.pop_atom();
+            let b = env.pop_atom();
+            if let (Atom::Symbol(ident), Atom::Quotation(q)) = (a, b) {
+                env.bind_var(&ident, Atom::Function(Vec::new(), q));
+            } else {
+                panic!("Expected '<quotation> <ident> fn'.")
             }
         }
         Atom::Call => eval_call(env.pop_atom(), env),
@@ -100,30 +87,6 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
         },
         _ => env.push_atom(atom),
     }
-}
-
-// TODO: Figure out what's happening here
-fn make_fn_q(expr: Vec<Atom>, env: &mut Env) -> Atom {
-    // Implementation 1
-    // return Atom::Quotation(expr);
-
-    // For some reason, this is the fastest of these three implementations.
-    // Except, as far as I can tell, this one should be doing the most work,
-    // since it should perform at least as many allocations, but with multiple
-    // additional calls to functions that do more stuff.
-    eval_atom(Atom::QuotationStart, env);
-    for atom in expr {
-        eval_atom(atom, env);
-    }
-    eval_atom(Atom::QuotationEnd, env);
-    env.pop_atom()
-
-    // Implementation 3
-    // let v = Vec::new();
-    // for atom in expr {
-    //     v.push(atom);
-    // }
-    // Atom::Quotation(v)
 }
 
 pub fn eval_with_new_scope(expr: Vec<Atom>, env: &mut Env) -> Atom {

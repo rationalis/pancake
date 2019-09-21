@@ -37,8 +37,8 @@ fn parse_special_ident_(token: &str) -> Option<Atom> {
     use crate::types::Op;
     Some(match token {
         "call" => Atom::Call,
-        "let" => Atom::DefOp(false),
-        "fn" => Atom::DefOp(true),
+        "let" => Atom::DefVarLiteral,
+        "fn" => Atom::DefFnLiteral,
         "true" => Atom::Bool(true),
         "false" => Atom::Bool(false),
         "not" => Atom::NotOp,
@@ -185,19 +185,20 @@ fn parse_fn(line: &str) -> Option<Vec<Atom>> {
         let v0: Atom = d.next().unwrap();
 
         if let Atom::Plain(ident) = v0 {
+            let params =
+                d.map(|a| {
+                    if let Atom::Plain(name) = a {
+                        name
+                    } else {
+                        unreachable!()
+                    }
+                })
+                .collect();
             return Some(vec![
-                Atom::Quotation(parse_expr(expr)),
+                Atom::Quotation(vec![
+                    Atom::Function(params, parse_expr(expr))]),
                 Atom::Symbol(ident),
-                Atom::DefFn(
-                    d.map(|a| {
-                        if let Atom::Plain(name) = a {
-                            name
-                        } else {
-                            unreachable!()
-                        }
-                    })
-                    .collect(),
-                ),
+                Atom::DefVar,
             ]);
         }
     }
