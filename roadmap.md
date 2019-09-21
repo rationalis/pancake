@@ -4,11 +4,10 @@
 
 - Write some docstrings with test examples.
 - Lists/composites
+  - `match`
 - Combinators which either significantly improve ergonomics or add new
   capabilities (e.g. TODO)
-- Lists/composites, `match`
-  - Iterators
-- Functions defined for singular values
+- Functions defined for singular values (ad hoc polymorphism more generally)
 - String types / polymorphism, standard string operations (split, substring,
   index, concat, format)
   - Uses of traits like Add requires changing macros, some kind of basic type

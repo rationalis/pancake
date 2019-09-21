@@ -165,6 +165,8 @@ pub fn get_stack_op(op: &str) -> Option<fn(&mut Env)> {
             let l = env.pop_atom();
             if let Atom::List(list) = l {
                 env.append_atoms(list)
+            } else {
+                panic!("Expected list splat.")
             }
         },
         "repeat" => |env| {
