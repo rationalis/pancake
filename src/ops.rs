@@ -11,19 +11,12 @@ pub fn get_arithmetic_op(op: &str) -> Option<fn(&mut Env)> {
 
 pub fn get_boolean_op(op: &str) -> Option<fn(&mut Env)> {
     Some(match op {
-        "and" => atomify!(("and" ((a:Bool,b:Bool)->Bool) {a && b})),
-        "or" => atomify!(("or" ((a:Bool,b:Bool)->Bool) {a || b})),
-        "cond" => |env| {
-            let else_branch = env.pop_atom();
-            let if_branch = env.pop_atom();
-            let condition = env.pop_atom();
-            if let (Atom::Quotation(else_q), Atom::Quotation(if_q), Atom::Bool(cond)) =
-                (else_branch, if_branch, condition)
-            {
-                let q = if cond { if_q } else { else_q };
-                eval_function(Vec::new(), q, env);
-            }
-        },
+        "and" => atomify!("and" ((a:Bool,b:Bool)->Bool) {a && b}),
+        "or" => atomify!("or" ((a:Bool,b:Bool)->Bool) {a || b}),
+        "cond" => atomify!("cond" ((cond:Bool, if_q:Quotation, else_q:Quotation)) {
+            let q = if cond { if_q } else { else_q };
+            eval_function(Vec::new(), q, env);
+        }),
         "if" => |env| {
             if env.loop_like {
                 env.using_for_else = true;

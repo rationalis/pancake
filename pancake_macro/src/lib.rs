@@ -13,7 +13,7 @@ fn binop_general(op: Literal, in_ty: Ident, out_ty: Ident) -> TS {
     let spacing: Spacing = if lit_str.len() > 1 { Spacing::Joint } else { Spacing::Alone };
     let p: Vec<Punct> = lit_str.chars().map(|c| Punct::new(c, spacing)).collect();
     let tokens = quote! {
-        (#op ((a: #in_ty, b: #in_ty) -> #out_ty) { a #(#p)* b })
+        #op ((a: #in_ty, b: #in_ty) -> #out_ty) { a #(#p)* b }
     };
     atomify(TS::from(tokens))
 }
@@ -52,17 +52,15 @@ pub fn binops(input: TS) -> TS {
             } else {
                 panic!("Expected a literal following type.")
             }
+        } else if let TT::Ident(ident) = i {
+            let ident = ident.to_string();
+            ty = Some(match ident.as_str() {
+                "a" => Type::Arithmetic,
+                "c" => Type::Comparison,
+                _ => { panic!("Unrecognized type."); }
+            });
         } else {
-            if let TT::Ident(ident) = i {
-                let ident = ident.to_string();
-                ty = Some(match ident.as_str() {
-                    "a" => Type::Arithmetic,
-                    "c" => Type::Comparison,
-                    _ => { panic!("Unrecognized type."); }
-                });
-            } else {
-                panic!("Expected an identifier specifying type.")
-            }
+            panic!("Expected an identifier specifying type.")
         }
         second = !second;
     }
@@ -116,20 +114,28 @@ pub fn cmp_op(input: TS) -> TS {
 #[proc_macro]
 pub fn atomify(input: TS) -> TS {
     let input = TS2::from(input);
+    impl_atomify(input.into_iter())
+}
 
-    let (name, arg_name, arg_type, return_type, expr) = extract(input);
+fn impl_atomify(iter: impl Iterator<Item = TT>) -> TS {
+    let (name, arg_name, arg_type, return_type, expr) = extract(iter);
 
     let name: TT = name.into();
     let arg_name: Vec<TT> = arg_name.into_iter().map(|x| x.into()).collect();
     let arg_name_rev = arg_name.clone().into_iter().rev();
     let arg_type: Vec<TT> = arg_type.into_iter().map(|x| x.into()).collect();
-    let return_type: TT = return_type.into();
+
+    let expr: TS2 = if let Some(return_type) = return_type {
+        quote! {env.push_atom(#return_type(#expr));}
+    } else {
+        quote! {#expr}
+    };
 
     let tokens = quote! {
         |env: &mut Env| {
             #(let #arg_name_rev = env.pop_atom();)*
             if let (#(#arg_type(#arg_name)),*) = (#(#arg_name),*) {
-                env.push_atom(#return_type(#expr));
+                #expr
             } else {
                 panic!("Invalid arguments for {}", #name);
             }
@@ -139,64 +145,58 @@ pub fn atomify(input: TS) -> TS {
     TS::from(tokens)
 }
 
-fn extract(input: TS2) -> (Literal, Vec<Ident>, Vec<Ident>, Ident, TS2) {
-    let mut iter = input.into_iter();
-    let tt = iter.next().unwrap();
+fn extract(mut iter: impl Iterator<Item = TT>) -> (Literal, Vec<Ident>, Vec<Ident>, Option<Ident>, TS2) {
+    let lit = iter.next().unwrap();
+    let type_sig = iter.next().unwrap();
+    let expr = iter.next().unwrap();
 
-    if let TT::Group(all) = tt {
-        let ts = all.stream();
-        let mut iter = ts.into_iter();
-        let lit = iter.next().unwrap();
-        let type_sig = iter.next().unwrap();
-        let expr = iter.next().unwrap();
+    if let (TT::Literal(lit), TT::Group(type_sig), TT::Group(expr)) = (lit, type_sig, expr) {
+        let name = lit;
+        let mut iter = type_sig.stream().into_iter();
+        let args = iter.next().unwrap();
 
-        if let (TT::Literal(lit), TT::Group(type_sig), TT::Group(expr)) = (lit, type_sig, expr) {
-            let name = lit;
-            let mut iter = type_sig.stream().into_iter();
-            let args = iter.next().unwrap();
+        let mut return_type: Option<Ident> = None;
+        if iter.next().is_some() { // ->
             let _ = iter.next().unwrap(); // ->
-            let _ = iter.next().unwrap(); // ->
-            let return_type = iter.next().unwrap();
-
-            if let TT::Group(args) = args {
-                // These should be of the form Ident(name), Punct(:),
-                // Ident(type), Punct(,), ...
-                let args_vec: Vec<TT> = args.stream().into_iter().map(|x| x).collect();
-
-                let args_vec = args_vec.split(
-                    |tt| {
-                        if let TT::Punct(p) = tt {
-                            p.as_char() == ','
-                        } else {
-                            false
-                        }
-                    }
-                ).map(
-                    |v_tt| {
-                        let mut iter = v_tt.into_iter();
-                        let arg_name = iter.next().unwrap();
-                        let _ = iter.next().unwrap();
-                        let arg_type = iter.next().unwrap();
-                        if let (TT::Ident(arg_name), TT::Ident(arg_type)) = (arg_name, arg_type) {
-                            (arg_name.clone(), arg_type.clone())
-                        } else {
-                            panic!();
-                        }
-                    }
-                ).unzip();
-
-                if let TT::Ident(return_type) = return_type {
-                    return (name, args_vec.0, args_vec.1, return_type, expr.stream());
-                } else {
-                    panic!("Return type not Ident")
-                }
+            if let TT::Ident(r) = iter.next().unwrap() {
+                return_type = Some(r);
             } else {
-                panic!("args not Group")
+                panic!("Return type not Ident");
             }
+        }
+
+        if let TT::Group(args) = args {
+            // These should be of the form Ident(name), Punct(:),
+            // Ident(type), Punct(,), ...
+            let args_vec: Vec<TT> = args.stream().into_iter().map(|x| x).collect();
+
+            let args_vec = args_vec.split(
+                |tt| {
+                    if let TT::Punct(p) = tt {
+                        p.as_char() == ','
+                    } else {
+                        false
+                    }
+                }
+            ).map(
+                |v_tt| {
+                    let mut iter = v_tt.iter();
+                    let arg_name = iter.next().unwrap();
+                    let _ = iter.next().unwrap();
+                    let arg_type = iter.next().unwrap();
+                    if let (TT::Ident(arg_name), TT::Ident(arg_type)) = (arg_name, arg_type) {
+                        (arg_name.clone(), arg_type.clone())
+                    } else {
+                        panic!();
+                    }
+                }
+            ).unzip();
+
+            (name, args_vec.0, args_vec.1, return_type, expr.stream())
         } else {
-            panic!("lit, type_sig, expr mismatch")
+            panic!("args not Group")
         }
     } else {
-        panic!("Outer not enclosed in group");
+        panic!("lit, type_sig, expr mismatch")
     }
 }
