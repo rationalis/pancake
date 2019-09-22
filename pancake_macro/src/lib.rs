@@ -117,6 +117,10 @@ pub fn atomify(input: TS) -> TS {
     impl_atomify(input.into_iter())
 }
 
+// TODO: Unhandled cases:
+// - Precondition, postcondition (check if necessary?)
+// - Ignoring type (polymorphism)
+// - Returning more than one element
 fn impl_atomify(iter: impl Iterator<Item = TT>) -> TS {
     let (name, arg_name, arg_type, return_type, expr) = extract(iter);
 
@@ -126,7 +130,10 @@ fn impl_atomify(iter: impl Iterator<Item = TT>) -> TS {
     let arg_type: Vec<TT> = arg_type.into_iter().map(|x| x.into()).collect();
 
     let expr: TS2 = if let Some(return_type) = return_type {
-        quote! {env.push_atom(#return_type(#expr));}
+        quote! {
+            let output = #return_type(#expr);
+            env.push_atom(output);
+        }
     } else {
         quote! {#expr}
     };
@@ -134,7 +141,7 @@ fn impl_atomify(iter: impl Iterator<Item = TT>) -> TS {
     let tokens = quote! {
         |env: &mut Env| {
             #(let #arg_name_rev = env.pop_atom();)*
-            if let (#(#arg_type(#arg_name)),*) = (#(#arg_name),*) {
+            if let (#(#arg_type(mut #arg_name)),*) = (#(#arg_name),*) {
                 #expr
             } else {
                 panic!("Invalid arguments for {}", #name);
