@@ -1,31 +1,112 @@
 extern crate proc_macro;
 
-use proc_macro2::{Ident, Literal, Punct, Spacing, TokenStream, TokenTree};
+use proc_macro2::*;
 use proc_macro::TokenStream as TS;
 use quote::quote;
 
 type TT = TokenTree;
 type TS2 = TokenStream;
 
-/// binop!("+" Num) == atomify!(("+" ((a:Num, b:Num) -> Num) { a + b } ))
+fn binop_general(op: Literal, in_ty: Ident, out_ty: Ident) -> TS {
+    let lit_str = op.to_string();
+    let lit_str = lit_str[1..lit_str.len()-1].to_string();
+    let spacing: Spacing = if lit_str.len() > 1 { Spacing::Joint } else { Spacing::Alone };
+    let p: Vec<Punct> = lit_str.chars().map(|c| Punct::new(c, spacing)).collect();
+    let tokens = quote! {
+        (#op ((a: #in_ty, b: #in_ty) -> #out_ty) { a #(#p)* b })
+    };
+    atomify(TS::from(tokens))
+}
+
 #[proc_macro]
-pub fn binop(input: TS) -> TS {
+pub fn binops(input: TS) -> TS {
+    let iter = TS2::from(input).into_iter();
+
+    enum Type {
+        Arithmetic,
+        Comparison
+    }
+
+    let mut arms: Vec<TS2> = Vec::new();
+    let mut second = false;
+    let mut ty: Option<Type> = None;
+    for i in iter {
+        if second {
+            if let TT::Literal(lit) = i {
+                let f = 
+                    if let Some(Type::Arithmetic) = ty {
+                        arith_op
+                    } else if let Some(Type::Comparison) = ty {
+                        cmp_op
+                    } else {
+                        unreachable!()
+                    };
+                let tt: TT = lit.clone().into();
+                let ts: TS2 = tt.into();
+                let ts: TS = ts.into();
+                let closure: TS2 = f(ts).into();
+                let arm = quote! {
+                    #lit => #closure
+                };
+                arms.push(arm);
+            } else {
+                panic!("Expected a literal following type.")
+            }
+        } else {
+            if let TT::Ident(ident) = i {
+                let ident = ident.to_string();
+                ty = Some(match ident.as_str() {
+                    "a" => Type::Arithmetic,
+                    "c" => Type::Comparison,
+                    _ => { panic!("Unrecognized type."); }
+                });
+            } else {
+                panic!("Expected an identifier specifying type.")
+            }
+        }
+        second = !second;
+    }
+
+    let tokens = quote! {
+        Some(match op {
+            #(#arms,)*
+            _ => {
+                return None;
+            }
+        })
+    };
+
+    tokens.into()
+}
+
+/// arith_op!("+" Num) == atomify!(("+" ((a:Num, b:Num) -> Num) { a + b } ))
+#[proc_macro]
+pub fn arith_op(input: TS) -> TS {
     let input = TS2::from(input);
     let mut iter = input.into_iter();
     let lit = iter.next().unwrap();
-    let ty = iter.next().unwrap();
 
-    if let (TT::Literal(lit), TT::Ident(ty)) = (lit, ty) {
-        let lit_str = lit.to_string();
-        let lit_str = lit_str[1..lit_str.len()-1].to_string();
-        let spacing: Spacing = if lit_str.len() > 1 { Spacing::Joint } else { Spacing::Alone };
-        let p: Vec<Punct> = lit_str.chars().map(|c| Punct::new(c, spacing)).collect();
-        let tokens = quote! {
-            (#lit ((a: #ty, b: #ty) -> #ty) { a #(#p)* b })
-        };
-        atomify(TS::from(tokens))
+    if let TT::Literal(lit) = lit {
+        let ty = Ident::new("Num", Span::call_site());
+        let ty2 = ty.clone();
+        binop_general(lit, ty, ty2)
     } else {
-        panic!("Expected literal & type ident");
+        panic!("Expected literal.");
+    }
+}
+
+#[proc_macro]
+pub fn cmp_op(input: TS) -> TS {
+    let input = TS2::from(input);
+    let mut iter = input.into_iter();
+    let lit = iter.next().unwrap();
+
+    if let TT::Literal(lit) = lit {
+        let ty1 = Ident::new("Num", Span::call_site());
+        let ty2 = Ident::new("Bool", Span::call_site());
+        binop_general(lit, ty1, ty2)
+    } else {
+        panic!("Expected literal.");
     }
 }
 
