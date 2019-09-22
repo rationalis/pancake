@@ -1,6 +1,10 @@
 use crate::eval::{eval_call, eval_function};
 use crate::types::{Atom, Env};
 
+use Atom::*;
+
+use pancake_macro::{atomify, binop};
+
 macro_rules! eval_op {
     ( $op:tt, $wrap:path) => {
         {
@@ -32,7 +36,7 @@ macro_rules! eval_op {
 
 pub fn get_arithmetic_op(op: &str) -> Option<fn(&mut Env)> {
     Some(match op {
-        "+" => eval_op!(+, Atom::Num),
+        "+" => binop!("+" Num),
         "-" => eval_op!(-, Atom::Num),
         "*" => eval_op!(*, Atom::Num),
         "/" => eval_op!(/, Atom::Num),

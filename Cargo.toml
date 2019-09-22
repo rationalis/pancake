@@ -18,6 +18,8 @@ lazy_static = "1.4.0"
 inlinable_string = "0.1"
 flame = "0.2.2"
 flamer = "0.3"
+
+pancake_macro = { path = "pancake_macro" }
 # I was using Vector to support cheap clones; seems unnecessary right now.
 # im-rc = "13"
 

@@ -185,8 +185,8 @@ fn parse_fn(line: &str) -> Option<Vec<Atom>> {
         let v0: Atom = d.next().unwrap();
 
         if let Atom::Plain(ident) = v0 {
-            let params =
-                d.map(|a| {
+            let params = d
+                .map(|a| {
                     if let Atom::Plain(name) = a {
                         name
                     } else {
@@ -195,8 +195,7 @@ fn parse_fn(line: &str) -> Option<Vec<Atom>> {
                 })
                 .collect();
             return Some(vec![
-                Atom::Quotation(vec![
-                    Atom::Function(params, parse_expr(expr))]),
+                Atom::Quotation(vec![Atom::Function(params, parse_expr(expr))]),
                 Atom::Symbol(ident),
                 Atom::DefVar,
             ]);
