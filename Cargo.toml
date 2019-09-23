@@ -1,6 +1,6 @@
 [package]
 name = "pancake"
-version = "0.1.0"
+version = "0.0.1"
 authors = ["Jimmy Ye <jiy162@ucsd.edu>"]
 edition = "2018"
 
