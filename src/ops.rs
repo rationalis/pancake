@@ -84,7 +84,7 @@ pub fn get_stack_op(op: &str) -> Option<fn(&mut Env)> {
                 new_list
             }
         }),
-        "reduce" => atomify!("reduce" ((list:List, q:Quotation)->List) {
+        "reduce_inner" => atomify!("reduce_inner" ((list:List, q:Quotation)->List) {
             {
                 env.for_else = true;
                 env.loop_like = true;

@@ -163,7 +163,7 @@ fn bubblesort() {
         ntoa(vec![0, 1, 2, 3, 4, 5]),
         r"
 fn fix a b = a b a b > [swap] if
-fn bubblesort = [fix] reduce [bubblesort] for_if
+fn bubblesort = [fix] reduce_inner [bubblesort] for_if
 [1 3 2 5 4 0]list bubblesort splat
 ",
     );
