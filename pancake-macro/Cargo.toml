@@ -1,5 +1,5 @@
 [package]
-name = "pancake_macro"
+name = "pancake-macro"
 version = "0.0.1"
 authors = ["Jimmy Ye <jiy162@ucsd.edu>"]
 edition = "2018"

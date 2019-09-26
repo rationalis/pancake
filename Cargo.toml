@@ -1,25 +1,6 @@
-[package]
-name = "pancake"
-version = "0.0.1"
-authors = ["Jimmy Ye <jiy162@ucsd.edu>"]
-edition = "2018"
+[workspace]
 
-[dev-dependencies]
-criterion = "0.3"
-
-[[bench]]
-name = "recursive_fibonacci"
-harness = false
-
-[dependencies]
-nom = "5"
-regex = "1"
-lazy_static = "1.4.0"
-inlinable_string = "0.1"
-flame = "0.2.2"
-flamer = "0.3"
-
-pancake_macro = { path = "pancake_macro" }
-# I was using Vector to support cheap clones; seems unnecessary right now.
-# im-rc = "13"
-
+members = [
+    "pancake",
+    "pancake-macro",
+]
