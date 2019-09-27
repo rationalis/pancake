@@ -128,6 +128,12 @@ pub fn get_stack_op(op: &str) -> Option<fn(&mut Env)> {
                 }
             }
         },
+        "print" => |env| {
+            println!("{:#?}", env.pop_atom());
+        },
+        "debug" => |env| {
+            println!("{:#?}", env);
+        },
         "get" => |env| {
             if let Atom::Symbol(ident) = env.pop_atom() {
                 match env.find_var(&ident) {
