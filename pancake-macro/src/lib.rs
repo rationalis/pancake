@@ -139,11 +139,14 @@ pub fn shuffle(input: TS) -> TS {
 
     let args = args.iter().rev();
 
+    let num_in = args.len();
+    let num_out = out.len();
+
     let tokens = quote! {
-        |env: &mut Env| {
+        (|env: &mut Env| {
             #(let #args = env.pop_atom();)*
             #(env.push_atom(#out);)*
-        }
+        }, Some((#num_in as u8, #num_out as u8)))
     };
 
     tokens.into()
@@ -170,6 +173,18 @@ fn impl_atomify(iter: impl Iterator<Item = TT>) -> TS {
     let arg_name_rev = arg_name.clone().into_iter().rev();
     let arg_type: Vec<TT> = arg_type.into_iter().map(|x| x.into()).collect();
 
+    let num_in = arg_name.len();
+    let arity =
+    if return_type.is_some() {
+        quote! {
+            Some((#num_in as u8, 1 as u8)) 
+        }
+    } else {
+        quote!{
+            None
+        }
+    };
+
     let expr: TS2 = if let Some(return_type) = return_type {
         quote! {
             let output = #return_type(#expr);
@@ -180,14 +195,14 @@ fn impl_atomify(iter: impl Iterator<Item = TT>) -> TS {
     };
 
     let tokens = quote! {
-        |env: &mut Env| {
+        (|env: &mut Env| {
             #(let #arg_name_rev = env.pop_atom();)*
             if let (#(#arg_type(mut #arg_name)),*) = (#(#arg_name),*) {
                 #expr
             } else {
                 panic!("Invalid arguments for {}", #name);
             }
-        }
+        }, #arity)
     };
 
     TS::from(tokens)

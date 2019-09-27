@@ -1,15 +1,17 @@
 use crate::eval::{eval_call, eval_function};
-use crate::types::{Atom, Env};
+use crate::types::{Arity, Atom, Env};
 
 use Atom::*;
 
 use pancake_macro::{atomify, binops, shuffle};
 
-pub fn get_arithmetic_op(op: &str) -> Option<fn(&mut Env)> {
+type OpWithArity = (fn(&mut Env), Arity);
+
+pub fn get_arithmetic_op(op: &str) -> Option<OpWithArity> {
     binops!(a"+" a"-" a"*" a"/" a"%" c"<" c">" c"<=" c">=" c"==" c"!=")
 }
 
-pub fn get_boolean_op(op: &str) -> Option<fn(&mut Env)> {
+pub fn get_boolean_op(op: &str) -> Option<OpWithArity> {
     Some(match op {
         "and" => atomify!("and" ((a:Bool,b:Bool)->Bool) {a && b}),
         "or" => atomify!("or" ((a:Bool,b:Bool)->Bool) {a || b}),
@@ -35,23 +37,23 @@ pub fn get_boolean_op(op: &str) -> Option<fn(&mut Env)> {
     })
 }
 
-pub fn get_stack_op(op: &str) -> Option<fn(&mut Env)> {
+pub fn get_stack_op(op: &str) -> Option<OpWithArity> {
     Some(match op {
         "drop" => shuffle!(_a -- ),
         "swap" => shuffle!(a b -- b a),
         "rot3" => shuffle!(a b c -- b c a),
-        "dup" => |env| {
+        "dup" => (|env| {
             let a = env.pop_atom();
             env.push_atom(a.clone());
             env.push_atom(a);
-        },
-        "list" => |env| {
+        }, Some((1, 2))),
+        "list" => (|env| {
             let q = env.pop_atom();
             env.push_blank(false);
             eval_call(q, env);
             let stack = env.pop().unwrap().stack;
             env.push_atom(Atom::List(stack));
-        },
+        }, Some((1, 1))),
         "map" => atomify!("map" ((list:List, q:Quotation)->List) {
             {
                 let q = Quotation(q);
@@ -94,7 +96,7 @@ pub fn get_stack_op(op: &str) -> Option<fn(&mut Env)> {
             }
         }),
         "splat" => atomify!("splat" ((list:List)) {env.append_atoms(list)}),
-        "repeat" => |env| {
+        "repeat" => (|env| {
             env.for_else = true;
             env.loop_like = true;
             let n = env.pop_atom();
@@ -105,8 +107,8 @@ pub fn get_stack_op(op: &str) -> Option<fn(&mut Env)> {
                 }
             }
             env.loop_like = false;
-        },
-        "for_else" => |env| {
+        }, None),
+        "for_else" => (|env| {
             if !env.using_for_else {
                 panic!("No conditionals used by loop-like combinator.")
             }
@@ -116,8 +118,8 @@ pub fn get_stack_op(op: &str) -> Option<fn(&mut Env)> {
                     eval_function(Vec::new(), body_q, env);
                 }
             }
-        },
-        "for_if" => |env| {
+        }, None),
+        "for_if" => (|env| {
             if !env.using_for_else {
                 panic!("No conditionals used by loop-like combinator.")
             }
@@ -127,14 +129,14 @@ pub fn get_stack_op(op: &str) -> Option<fn(&mut Env)> {
                     eval_function(Vec::new(), body_q, env);
                 }
             }
-        },
-        "print" => |env| {
+        }, None),
+        "print" => (|env| {
             println!("{:#?}", env.pop_atom());
-        },
-        "debug" => |env| {
+        }, Some((1, 0))),
+        "debug" => (|env| {
             println!("{:#?}", env);
-        },
-        "get" => |env| {
+        }, Some((0, 0))),
+        "get" => (|env| {
             if let Atom::Symbol(ident) = env.pop_atom() {
                 match env.find_var(&ident) {
                     Some(Atom::Function(_, body)) => env.push_atom(Atom::Quotation(body)),
@@ -142,7 +144,7 @@ pub fn get_stack_op(op: &str) -> Option<fn(&mut Env)> {
                     _ => panic!("Unrecognized identifier: {}", ident),
                 }
             }
-        },
+        }, None),
         _ => {
             return None;
         }

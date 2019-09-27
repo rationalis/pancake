@@ -20,8 +20,10 @@ pub mod types {
 
     pub type Stack = Vec<Atom>;
 
+    pub type Arity = Option<(u8, u8)>;
+
     #[derive(Clone)]
-    pub struct Op(fn(&mut Env));
+    pub struct Op(fn(&mut Env), Option<(u8, u8)>);
 
     use std::fmt;
     impl fmt::Debug for Op {
@@ -39,8 +41,8 @@ pub mod types {
     impl Eq for Op {}
 
     impl Op {
-        pub fn new(f: fn(&mut Env)) -> Self {
-            Self(f)
+        pub fn new(pair: (fn(&mut Env), Arity)) -> Self {
+            Self(pair.0, pair.1)
         }
         pub fn f(&self) -> fn(&mut Env) {
             self.0
