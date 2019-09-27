@@ -41,7 +41,6 @@ fn parse_special_ident_(token: &str) -> Option<Atom> {
         "fn" => Atom::DefFnLiteral,
         "true" => Atom::Bool(true),
         "false" => Atom::Bool(false),
-        "not" => Atom::NotOp,
         s => {
             if let Some(op) = get_boolean_op(s) {
                 Atom::Op(Op::new(op))

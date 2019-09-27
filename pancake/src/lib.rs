@@ -54,7 +54,6 @@ pub mod types {
 
         List(Vec<Atom>),
 
-        NotOp,
         Op(Op),
 
         QuotationStart, // [

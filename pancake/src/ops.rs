@@ -17,6 +17,7 @@ pub fn get_boolean_op(op: &str) -> Option<fn(&mut Env)> {
             let q = if cond { if_q } else { else_q };
             eval_function(Vec::new(), q, env);
         }),
+        "not" => atomify!("not" ((a:Bool)->Bool) {!a}),
         "if" => atomify!("if" ((cond:Bool, body_q:Quotation)) {
             if env.loop_like {
                 env.using_for_else = true;

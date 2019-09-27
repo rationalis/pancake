@@ -32,60 +32,55 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
         return;
     }
 
+    use Atom::*;
     match atom {
-        Atom::Op(op) => {
+        Bool(_) | Num(_) | Quotation(_) | Symbol(_) | Function(_,_) => env.push_atom(atom),
+        Op(op) => {
             op.f()(env);
         }
-        Atom::NotOp => {
-            if let Atom::Bool(b) = env.pop_atom() {
-                env.push_atom(Atom::Bool(!b));
-            } else {
-                panic!("Tried to negate a non-boolean.")
-            }
-        }
-        Atom::QuotationStart => {
+        QuotationStart => {
             env.push_blank(true);
         }
-        Atom::QuotationEnd => {
+        QuotationEnd => {
             let stack: Stack = env.pop().unwrap().stack;
-            let quotation = Atom::Quotation(stack);
+            let quotation = Quotation(stack);
             env.push_atom(quotation);
         }
-        Atom::DefVar => {
+        DefVar => {
             let a = env.pop_atom();
             let b = env.pop_atom();
-            if let (Atom::Symbol(ident), Atom::Quotation(expr)) = (a, b) {
+            if let (Symbol(ident), Quotation(expr)) = (a, b) {
                 let result_of_expr = eval_with_new_scope(expr, env);
                 env.bind_var(&ident, result_of_expr);
             } else {
                 unreachable!();
             }
         }
-        Atom::DefVarLiteral => {
+        DefVarLiteral => {
             let a = env.pop_atom();
             let b = env.pop_atom();
-            if let Atom::Symbol(ident) = a {
+            if let Symbol(ident) = a {
                 env.bind_var(&ident, b);
             } else {
                 panic!("Expected '<value> <ident> let'.")
             }
         }
-        Atom::DefFnLiteral => {
+        DefFnLiteral => {
             let a = env.pop_atom();
             let b = env.pop_atom();
-            if let (Atom::Symbol(ident), Atom::Quotation(q)) = (a, b) {
-                env.bind_var(&ident, Atom::Function(Vec::new(), q));
+            if let (Symbol(ident), Quotation(q)) = (a, b) {
+                env.bind_var(&ident, Function(Vec::new(), q));
             } else {
                 panic!("Expected '<quotation> <ident> fn'.")
             }
         }
-        Atom::Call => eval_call(env.pop_atom(), env),
-        Atom::Plain(ident) => match env.find_var(&ident) {
-            Some(Atom::Function(params, body)) => eval_function(params, body, env),
+        Call => eval_call(env.pop_atom(), env),
+        Plain(ident) => match env.find_var(&ident) {
+            Some(Function(params, body)) => eval_function(params, body, env),
             Some(atom) => env.push_atom(atom),
             _ => panic!("Unrecognized identifier: {}", ident),
         },
-        _ => env.push_atom(atom),
+        _ => { panic!("Unexpected atom type {:#?}", atom); }
     }
 }
 
