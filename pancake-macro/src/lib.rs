@@ -108,6 +108,47 @@ pub fn cmp_op(input: TS) -> TS {
     }
 }
 
+#[proc_macro]
+pub fn shuffle(input: TS) -> TS {
+    let input: TS2 = input.into();
+    let mut args: Vec<Ident> = Vec::new();
+    let mut out: Vec<Ident> = Vec::new();
+    let mut iter = input.into_iter();
+    loop {
+        let tt: TT = iter.next().unwrap();
+        if let TT::Ident(i) = tt {
+            args.push(i);
+        } else {
+            break;
+        }
+    }
+
+    iter.next().unwrap();
+
+    loop {
+        let tt: Option<TT> = iter.next();
+        if tt.is_none() {
+            break;
+        }
+        if let TT::Ident(i) = tt.unwrap() {
+            out.push(i);
+        } else {
+            panic!("Unexpected non-ident");
+        }
+    }
+
+    let args = args.iter().rev();
+
+    let tokens = quote! {
+        |env: &mut Env| {
+            #(let #args = env.pop_atom();)*
+            #(env.push_atom(#out);)*
+        }
+    };
+
+    tokens.into()
+}
+
 /// Takes something similar to the form `"+" ((a: Num, b: Num) -> Num) { a + b }`
 /// and constructs a closure representing this for Pancake internally. This is
 /// the core macro for constructing closure-based Atoms.

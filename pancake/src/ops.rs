@@ -3,7 +3,7 @@ use crate::types::{Atom, Env};
 
 use Atom::*;
 
-use pancake_macro::{atomify, binops};
+use pancake_macro::{atomify, binops, shuffle};
 
 pub fn get_arithmetic_op(op: &str) -> Option<fn(&mut Env)> {
     binops!(a"+" a"-" a"*" a"/" a"%" c"<" c">" c"<=" c">=" c"==" c"!=")
@@ -37,27 +37,12 @@ pub fn get_boolean_op(op: &str) -> Option<fn(&mut Env)> {
 
 pub fn get_stack_op(op: &str) -> Option<fn(&mut Env)> {
     Some(match op {
+        "drop" => shuffle!(_a -- ),
+        "swap" => shuffle!(a b -- b a),
+        "rot3" => shuffle!(a b c -- b c a),
         "dup" => |env| {
             let a = env.pop_atom();
             env.push_atom(a.clone());
-            env.push_atom(a);
-        },
-        "drop" => |env| {
-            env.pop_atom();
-        },
-        "swap" => |env| {
-            let a = env.pop_atom();
-            let b = env.pop_atom();
-            env.push_atom(a);
-            env.push_atom(b);
-        },
-        "rot3" => |env| {
-            let c = env.pop_atom();
-            let b = env.pop_atom();
-            let a = env.pop_atom();
-            // a b c -- b c a
-            env.push_atom(b);
-            env.push_atom(c);
             env.push_atom(a);
         },
         "list" => |env| {
