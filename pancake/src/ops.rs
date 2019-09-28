@@ -42,18 +42,24 @@ pub fn get_stack_op(op: &str) -> Option<OpWithArity> {
         "drop" => shuffle!(_a -- ),
         "swap" => shuffle!(a b -- b a),
         "rot3" => shuffle!(a b c -- b c a),
-        "dup" => (|env| {
-            let a = env.pop_atom();
-            env.push_atom(a.clone());
-            env.push_atom(a);
-        }, Some((1, 2))),
-        "list" => (|env| {
-            let q = env.pop_atom();
-            env.push_blank(false);
-            eval_call(q, env);
-            let stack = env.pop().unwrap().stack;
-            env.push_atom(Atom::List(stack));
-        }, Some((1, 1))),
+        "dup" => (
+            |env| {
+                let a = env.pop_atom();
+                env.push_atom(a.clone());
+                env.push_atom(a);
+            },
+            Some((1, 2)),
+        ),
+        "list" => (
+            |env| {
+                let q = env.pop_atom();
+                env.push_blank(false);
+                eval_call(q, env);
+                let stack = env.pop().unwrap().stack;
+                env.push_atom(Atom::List(stack));
+            },
+            Some((1, 1)),
+        ),
         "map" => atomify!("map" ((list:List, q:Quotation)->List) {
             {
                 let q = Quotation(q);
@@ -96,78 +102,99 @@ pub fn get_stack_op(op: &str) -> Option<OpWithArity> {
             }
         }),
         "splat" => atomify!("splat" ((list:List)) {env.append_atoms(list)}),
-        "repeat" => (|env| {
-            env.for_else = true;
-            env.loop_like = true;
-            let n = env.pop_atom();
-            let q = env.pop_atom();
-            if let Atom::Num(times) = n {
-                for _ in 0..times {
-                    eval_call(q.clone(), env);
+        "repeat" => (
+            |env| {
+                env.for_else = true;
+                env.loop_like = true;
+                let n = env.pop_atom();
+                let q = env.pop_atom();
+                if let Atom::Num(times) = n {
+                    for _ in 0..times {
+                        eval_call(q.clone(), env);
+                    }
                 }
-            }
-            env.loop_like = false;
-        }, None),
-        "for_else" => (|env| {
-            if !env.using_for_else {
-                panic!("No conditionals used by loop-like combinator.")
-            }
-            let body = env.pop_atom();
-            if let Atom::Quotation(body_q) = body {
-                if env.for_else {
-                    eval_function(Vec::new(), body_q, env);
+                env.loop_like = false;
+            },
+            None,
+        ),
+        "for_else" => (
+            |env| {
+                if !env.using_for_else {
+                    panic!("No conditionals used by loop-like combinator.")
                 }
-            }
-        }, None),
-        "for_if" => (|env| {
-            if !env.using_for_else {
-                panic!("No conditionals used by loop-like combinator.")
-            }
-            let body = env.pop_atom();
-            if let Atom::Quotation(body_q) = body {
-                if !env.for_else {
-                    eval_function(Vec::new(), body_q, env);
+                let body = env.pop_atom();
+                if let Atom::Quotation(body_q) = body {
+                    if env.for_else {
+                        eval_function(Vec::new(), body_q, env);
+                    }
                 }
-            }
-        }, None),
-        "print" => (|env| {
-            println!("{:#?}", env.pop_atom());
-        }, Some((1, 0))),
-        "debug" => (|env| {
-            println!("{:#?}", env);
-        }, Some((0, 0))),
-        "get" => (|env| {
-            if let Atom::Symbol(ident) = env.pop_atom() {
-                match env.find_var(&ident) {
-                    Some(Atom::Function(_, body)) => env.push_atom(Atom::Quotation(body)),
-                    Some(_) => panic!("Tried to get a non-function."),
-                    _ => panic!("Unrecognized identifier: {}", ident),
+            },
+            None,
+        ),
+        "for_if" => (
+            |env| {
+                if !env.using_for_else {
+                    panic!("No conditionals used by loop-like combinator.")
                 }
-            }
-        }, None),
-        "keep" => (|env| {
-            let q = env.pop_atom();
-            let arity = arity(&q, env);
-            if let Some((num_in, _)) = arity {
-                let last_n: Vec<Atom>;
-                {
-                    let stack = &env.last_frame().stack;
-                    last_n = stack[stack.len() - num_in as usize ..].to_vec();
+                let body = env.pop_atom();
+                if let Atom::Quotation(body_q) = body {
+                    if !env.for_else {
+                        eval_function(Vec::new(), body_q, env);
+                    }
                 }
-                env.push_blank(false);
-                env.last_frame().stack = last_n;
-                if let Function(p, q) = q {
-                    eval_function(p, q, env);
+            },
+            None,
+        ),
+        "print" => (
+            |env| {
+                println!("{:#?}", env.pop_atom());
+            },
+            Some((1, 0)),
+        ),
+        "debug" => (
+            |env| {
+                println!("{:#?}", env);
+            },
+            Some((0, 0)),
+        ),
+        "get" => (
+            |env| {
+                if let Atom::Symbol(ident) = env.pop_atom() {
+                    match env.find_var(&ident) {
+                        Some(Atom::Function(_, body)) => env.push_atom(Atom::Quotation(body)),
+                        Some(_) => panic!("Tried to get a non-function."),
+                        _ => panic!("Unrecognized identifier: {}", ident),
+                    }
+                }
+            },
+            None,
+        ),
+        "keep" => (
+            |env| {
+                let q = env.pop_atom();
+                let arity = arity(&q, env);
+                if let Some((num_in, _)) = arity {
+                    let last_n: Vec<Atom>;
+                    {
+                        let stack = &env.last_frame().stack;
+                        last_n = stack[stack.len() - num_in as usize..].to_vec();
+                    }
+                    env.push_blank(false);
+                    env.last_frame().stack = last_n;
+                    if let Function(p, q) = q {
+                        eval_function(p, q, env);
+                    } else {
+                        eval_call(q, env);
+                    }
+                    let a = env.pop_atom();
+                    env.pop();
+                    env.push_atom(a);
                 } else {
-                    eval_call(q, env);
+                    panic!("Called keep on a quotation of unknown arity.");
                 }
-                let a = env.pop_atom();
-                env.pop();
-                env.push_atom(a);
-            } else {
-                panic!("Called keep on a quotation of unknown arity.");
-            }
-        }, None),
+            },
+            None,
+        ),
         _ => {
             return None;
         }

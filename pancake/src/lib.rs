@@ -25,7 +25,7 @@ pub mod types {
     #[derive(Clone)]
     pub struct Op {
         pub f: fn(&mut Env),
-        pub arity: Arity
+        pub arity: Arity,
     }
 
     use std::fmt;
@@ -53,7 +53,7 @@ pub mod types {
         pub fn new(pair: (fn(&mut Env), Arity)) -> Self {
             Self {
                 f: pair.0,
-                arity: pair.1
+                arity: pair.1,
             }
         }
     }

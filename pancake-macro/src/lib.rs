@@ -1,7 +1,7 @@
 extern crate proc_macro;
 
-use proc_macro2::*;
 use proc_macro::TokenStream as TS;
+use proc_macro2::*;
 use quote::quote;
 
 type TT = TokenTree;
@@ -9,8 +9,12 @@ type TS2 = TokenStream;
 
 fn binop_general(op: Literal, in_ty: Ident, out_ty: Ident) -> TS {
     let lit_str = op.to_string();
-    let lit_str = lit_str[1..lit_str.len()-1].to_string();
-    let spacing: Spacing = if lit_str.len() > 1 { Spacing::Joint } else { Spacing::Alone };
+    let lit_str = lit_str[1..lit_str.len() - 1].to_string();
+    let spacing: Spacing = if lit_str.len() > 1 {
+        Spacing::Joint
+    } else {
+        Spacing::Alone
+    };
     let p: Vec<Punct> = lit_str.chars().map(|c| Punct::new(c, spacing)).collect();
     let tokens = quote! {
         #op ((a: #in_ty, b: #in_ty) -> #out_ty) { a #(#p)* b }
@@ -24,7 +28,7 @@ pub fn binops(input: TS) -> TS {
 
     enum Type {
         Arithmetic,
-        Comparison
+        Comparison,
     }
 
     let mut arms: Vec<TS2> = Vec::new();
@@ -33,14 +37,13 @@ pub fn binops(input: TS) -> TS {
     for i in iter {
         if second {
             if let TT::Literal(lit) = i {
-                let f = 
-                    if let Some(Type::Arithmetic) = ty {
-                        arith_op
-                    } else if let Some(Type::Comparison) = ty {
-                        cmp_op
-                    } else {
-                        unreachable!()
-                    };
+                let f = if let Some(Type::Arithmetic) = ty {
+                    arith_op
+                } else if let Some(Type::Comparison) = ty {
+                    cmp_op
+                } else {
+                    unreachable!()
+                };
                 let tt: TT = lit.clone().into();
                 let ts: TS2 = tt.into();
                 let ts: TS = ts.into();
@@ -57,7 +60,9 @@ pub fn binops(input: TS) -> TS {
             ty = Some(match ident.as_str() {
                 "a" => Type::Arithmetic,
                 "c" => Type::Comparison,
-                _ => { panic!("Unrecognized type."); }
+                _ => {
+                    panic!("Unrecognized type.");
+                }
             });
         } else {
             panic!("Expected an identifier specifying type.")
@@ -174,13 +179,12 @@ fn impl_atomify(iter: impl Iterator<Item = TT>) -> TS {
     let arg_type: Vec<TT> = arg_type.into_iter().map(|x| x.into()).collect();
 
     let num_in = arg_name.len();
-    let arity =
-    if return_type.is_some() {
+    let arity = if return_type.is_some() {
         quote! {
-            Some((#num_in as u8, 1 as u8)) 
+            Some((#num_in as u8, 1 as u8))
         }
     } else {
-        quote!{
+        quote! {
             None
         }
     };
@@ -208,7 +212,9 @@ fn impl_atomify(iter: impl Iterator<Item = TT>) -> TS {
     TS::from(tokens)
 }
 
-fn extract(mut iter: impl Iterator<Item = TT>) -> (Literal, Vec<Ident>, Vec<Ident>, Option<Ident>, TS2) {
+fn extract(
+    mut iter: impl Iterator<Item = TT>,
+) -> (Literal, Vec<Ident>, Vec<Ident>, Option<Ident>, TS2) {
     let lit = iter.next().unwrap();
     let type_sig = iter.next().unwrap();
     let expr = iter.next().unwrap();
@@ -219,7 +225,8 @@ fn extract(mut iter: impl Iterator<Item = TT>) -> (Literal, Vec<Ident>, Vec<Iden
         let args = iter.next().unwrap();
 
         let mut return_type: Option<Ident> = None;
-        if iter.next().is_some() { // ->
+        if iter.next().is_some() {
+            // ->
             let _ = iter.next().unwrap(); // ->
             if let TT::Ident(r) = iter.next().unwrap() {
                 return_type = Some(r);
@@ -233,16 +240,15 @@ fn extract(mut iter: impl Iterator<Item = TT>) -> (Literal, Vec<Ident>, Vec<Iden
             // Ident(type), Punct(,), ...
             let args_vec: Vec<TT> = args.stream().into_iter().map(|x| x).collect();
 
-            let args_vec = args_vec.split(
-                |tt| {
+            let args_vec = args_vec
+                .split(|tt| {
                     if let TT::Punct(p) = tt {
                         p.as_char() == ','
                     } else {
                         false
                     }
-                }
-            ).map(
-                |v_tt| {
+                })
+                .map(|v_tt| {
                     let mut iter = v_tt.iter();
                     let arg_name = iter.next().unwrap();
                     let _ = iter.next().unwrap();
@@ -252,8 +258,8 @@ fn extract(mut iter: impl Iterator<Item = TT>) -> (Literal, Vec<Ident>, Vec<Iden
                     } else {
                         panic!();
                     }
-                }
-            ).unzip();
+                })
+                .unzip();
 
             (name, args_vec.0, args_vec.1, return_type, expr.stream())
         } else {

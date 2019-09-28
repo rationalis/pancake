@@ -22,11 +22,11 @@ pub fn eval_function(params: Vec<Identifier>, body: Stack, env: &mut Env) {
 }
 
 pub fn arity(f: &Atom, env: &mut Env) -> Arity {
-    use crate::types::Op as Op;
+    use crate::types::Op;
     let cond: Op = Op::new(get_boolean_op("cond").unwrap());
 
-    use Atom::*;
     use crate::ops::get_boolean_op;
+    use Atom::*;
 
     let num_in: u8;
     let quot: &Vec<Atom>;
@@ -44,7 +44,7 @@ pub fn arity(f: &Atom, env: &mut Env) -> Arity {
 
     for atom in quot {
         let a: Arity = match atom {
-            Bool(_) | Num(_) | Symbol(_) => Some((0,1)),
+            Bool(_) | Num(_) | Symbol(_) => Some((0, 1)),
             Quotation(_) | Function(_, _) => arity(atom, env),
             // TODO: Handle arities of other control flow combinators
             Op(op) => {
@@ -76,7 +76,7 @@ pub fn arity(f: &Atom, env: &mut Env) -> Arity {
                     }
                 }
             }
-            _ => None
+            _ => None,
         };
         arities.push(a);
     }
@@ -116,7 +116,7 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
 
     use Atom::*;
     match atom {
-        Bool(_) | Num(_) | Quotation(_) | Symbol(_) | Function(_,_) => env.push_atom(atom),
+        Bool(_) | Num(_) | Quotation(_) | Symbol(_) | Function(_, _) => env.push_atom(atom),
         Op(op) => {
             (op.f)(env);
         }
@@ -162,7 +162,9 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
             Some(atom) => env.push_atom(atom),
             _ => panic!("Unrecognized identifier: {}", ident),
         },
-        _ => { panic!("Unexpected atom type {:#?}", atom); }
+        _ => {
+            panic!("Unexpected atom type {:#?}", atom);
+        }
     }
 }
 
