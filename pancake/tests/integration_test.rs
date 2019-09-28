@@ -162,9 +162,19 @@ fn bubblesort() {
     assert_prog_output(
         ntoa(vec![0, 1, 2, 3, 4, 5]),
         r"
-fn fix a b = a b a b > [swap] if
+fn fix = [>]keep [swap] if
 fn bubblesort = [fix] reduce_inner [bubblesort] for_if
 [1 3 2 5 4 0]list bubblesort splat
+",
+    );
+}
+
+#[test]
+fn keep() {
+    assert_prog_output(
+        ntoa(vec![1, 2, 3, 9]),
+        r"
+1 2 3 [false [2 *] [3 *] cond]keep
 ",
     );
 }

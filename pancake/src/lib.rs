@@ -41,6 +41,12 @@ pub mod types {
         }
     }
 
+    impl PartialEq<&Op> for Op {
+        fn eq(&self, other: &&Op) -> bool {
+            self.f as usize == other.f as usize
+        }
+    }
+
     impl Eq for Op {}
 
     impl Op {
@@ -142,7 +148,7 @@ pub mod types {
             }
         }
 
-        fn last_frame(&mut self) -> &mut Frame {
+        pub fn last_frame(&mut self) -> &mut Frame {
             if let Some(frame) = self.frames.last_mut() {
                 frame
             } else {

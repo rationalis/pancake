@@ -21,20 +21,20 @@ pub fn eval_function(params: Vec<Identifier>, body: Stack, env: &mut Env) {
     }
 }
 
-pub fn arity(f: Atom, env: &mut Env) -> Arity {
+pub fn arity(f: &Atom, env: &mut Env) -> Arity {
     use crate::types::Op as Op;
     let cond: Op = Op::new(get_boolean_op("cond").unwrap());
 
     use Atom::*;
     use crate::ops::get_boolean_op;
 
-    let params: Vec<Identifier>;
-    let quot: Vec<Atom>;
+    let num_in: u8;
+    let quot: &Vec<Atom>;
     if let Function(p, q) = f {
-        params = p;
+        num_in = p.len() as u8;
         quot = q;
     } else if let Quotation(q) = f {
-        params = Vec::new();
+        num_in = 0;
         quot = q;
     } else {
         panic!("arity called on non-function");
@@ -46,15 +46,16 @@ pub fn arity(f: Atom, env: &mut Env) -> Arity {
         let a: Arity = match atom {
             Bool(_) | Num(_) | Symbol(_) => Some((0,1)),
             Quotation(_) | Function(_, _) => arity(atom, env),
+            // TODO: Handle arities of other control flow combinators
             Op(op) => {
-                if op != cond {
+                if cond != op {
                     op.arity
                 } else {
                     let a = arities.pop();
                     let b = arities.pop();
                     // We just assume that, if one branch has undefined arity,
                     // the branches must agree.
-                    if let (Some(a), Some(b)) = (a, b) {
+                    let arity = if let (Some(a), Some(b)) = (a, b) {
                         if a.is_some() && b.is_some() {
                             assert_eq!(a, b);
                             a
@@ -67,6 +68,11 @@ pub fn arity(f: Atom, env: &mut Env) -> Arity {
                         }
                     } else {
                         None
+                    };
+                    if let Some((num_in, num_out)) = arity {
+                        Some((num_in + 1, num_out))
+                    } else {
+                        None
                     }
                 }
             }
@@ -75,7 +81,7 @@ pub fn arity(f: Atom, env: &mut Env) -> Arity {
         arities.push(a);
     }
 
-    let mut num_in: u8 = params.len() as u8;
+    let mut num_in = num_in;
     let mut num_out: u8 = 0;
 
     for arity in arities {

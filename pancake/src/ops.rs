@@ -1,4 +1,4 @@
-use crate::eval::{eval_call, eval_function};
+use crate::eval::{arity, eval_call, eval_function};
 use crate::types::{Arity, Atom, Env};
 
 use Atom::*;
@@ -143,6 +143,29 @@ pub fn get_stack_op(op: &str) -> Option<OpWithArity> {
                     Some(_) => panic!("Tried to get a non-function."),
                     _ => panic!("Unrecognized identifier: {}", ident),
                 }
+            }
+        }, None),
+        "keep" => (|env| {
+            let q = env.pop_atom();
+            let arity = arity(&q, env);
+            if let Some((num_in, _)) = arity {
+                let last_n: Vec<Atom>;
+                {
+                    let stack = &env.last_frame().stack;
+                    last_n = stack[stack.len() - num_in as usize ..].to_vec();
+                }
+                env.push_blank(false);
+                env.last_frame().stack = last_n;
+                if let Function(p, q) = q {
+                    eval_function(p, q, env);
+                } else {
+                    eval_call(q, env);
+                }
+                let a = env.pop_atom();
+                env.pop();
+                env.push_atom(a);
+            } else {
+                panic!("Called keep on a quotation of unknown arity.");
             }
         }, None),
         _ => {
