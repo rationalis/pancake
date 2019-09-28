@@ -48,6 +48,13 @@ pub mod types {
         }
     }
 
+    use std::hash::{Hash, Hasher};
+    impl Hash for Op {
+        fn hash<H: Hasher>(&self, state: &mut H) {
+            (self.f as usize).hash(state);
+        }
+    }
+
     impl Eq for Op {}
 
     impl Op {
@@ -56,7 +63,7 @@ pub mod types {
         }
     }
 
-    #[derive(Debug, Clone, Eq, PartialEq)]
+    #[derive(Debug, Clone, Hash, Eq, PartialEq)]
     pub enum Atom {
         Bool(bool),
         Num(NumType),
