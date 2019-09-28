@@ -1,17 +1,17 @@
-use crate::eval::{arity, eval_call, eval_function};
-use crate::types::{Arity, Atom, Env};
+use crate::arity::arity;
+use crate::eval::{eval_call, eval_function};
+use crate::types::Op as O;
+use crate::types::{Atom, Env};
 
 use Atom::*;
 
 use pancake_macro::{atomify, binops, shuffle};
 
-type OpWithArity = (fn(&mut Env), Arity);
-
-pub fn get_arithmetic_op(op: &str) -> Option<OpWithArity> {
+pub fn get_arithmetic_op(op: &str) -> Option<O> {
     binops!(a"+" a"-" a"*" a"/" a"%" c"<" c">" c"<=" c">=" c"==" c"!=")
 }
 
-pub fn get_boolean_op(op: &str) -> Option<OpWithArity> {
+pub fn get_boolean_op(op: &str) -> Option<O> {
     Some(match op {
         "and" => atomify!("and" ((a:Bool,b:Bool)->Bool) {a && b}),
         "or" => atomify!("or" ((a:Bool,b:Bool)->Bool) {a || b}),
@@ -37,12 +37,12 @@ pub fn get_boolean_op(op: &str) -> Option<OpWithArity> {
     })
 }
 
-pub fn get_stack_op(op: &str) -> Option<OpWithArity> {
+pub fn get_stack_op(op: &str) -> Option<O> {
     Some(match op {
         "drop" => shuffle!(_a -- ),
         "swap" => shuffle!(a b -- b a),
         "rot3" => shuffle!(a b c -- b c a),
-        "dup" => (
+        "dup" => O::new(
             |env| {
                 let a = env.pop_atom();
                 env.push_atom(a.clone());
@@ -50,7 +50,7 @@ pub fn get_stack_op(op: &str) -> Option<OpWithArity> {
             },
             Some((1, 2)),
         ),
-        "list" => (
+        "list" => O::new(
             |env| {
                 let q = env.pop_atom();
                 env.push_blank(false);
@@ -102,7 +102,7 @@ pub fn get_stack_op(op: &str) -> Option<OpWithArity> {
             }
         }),
         "splat" => atomify!("splat" ((list:List)) {env.append_atoms(list)}),
-        "repeat" => (
+        "repeat" => O::new(
             |env| {
                 env.for_else = true;
                 env.loop_like = true;
@@ -117,7 +117,7 @@ pub fn get_stack_op(op: &str) -> Option<OpWithArity> {
             },
             None,
         ),
-        "for_else" => (
+        "for_else" => O::new(
             |env| {
                 if !env.using_for_else {
                     panic!("No conditionals used by loop-like combinator.")
@@ -131,7 +131,7 @@ pub fn get_stack_op(op: &str) -> Option<OpWithArity> {
             },
             None,
         ),
-        "for_if" => (
+        "for_if" => O::new(
             |env| {
                 if !env.using_for_else {
                     panic!("No conditionals used by loop-like combinator.")
@@ -145,19 +145,19 @@ pub fn get_stack_op(op: &str) -> Option<OpWithArity> {
             },
             None,
         ),
-        "print" => (
+        "print" => O::new(
             |env| {
                 println!("{:#?}", env.pop_atom());
             },
             Some((1, 0)),
         ),
-        "debug" => (
+        "debug" => O::new(
             |env| {
                 println!("{:#?}", env);
             },
             Some((0, 0)),
         ),
-        "get" => (
+        "get" => O::new(
             |env| {
                 if let Atom::Symbol(ident) = env.pop_atom() {
                     match env.find_var(&ident) {
@@ -169,7 +169,7 @@ pub fn get_stack_op(op: &str) -> Option<OpWithArity> {
             },
             None,
         ),
-        "keep" => (
+        "keep" => O::new(
             |env| {
                 let q = env.pop_atom();
                 let arity = arity(&q, env);

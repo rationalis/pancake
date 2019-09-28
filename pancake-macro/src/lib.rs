@@ -148,7 +148,7 @@ pub fn shuffle(input: TS) -> TS {
     let num_out = out.len();
 
     let tokens = quote! {
-        (|env: &mut Env| {
+        O::new(|env: &mut Env| {
             #(let #args = env.pop_atom();)*
             #(env.push_atom(#out);)*
         }, Some((#num_in as u8, #num_out as u8)))
@@ -199,7 +199,7 @@ fn impl_atomify(iter: impl Iterator<Item = TT>) -> TS {
     };
 
     let tokens = quote! {
-        (|env: &mut Env| {
+        O::new(|env: &mut Env| {
             #(let #arg_name_rev = env.pop_atom();)*
             if let (#(#arg_type(mut #arg_name)),*) = (#(#arg_name),*) {
                 #expr

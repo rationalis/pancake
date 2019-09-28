@@ -4,6 +4,7 @@
 extern crate lazy_static;
 //#[macro_use] extern crate flamer;
 
+pub mod arity;
 pub mod eval;
 pub mod ops;
 pub mod parse;
@@ -50,11 +51,8 @@ pub mod types {
     impl Eq for Op {}
 
     impl Op {
-        pub fn new(pair: (fn(&mut Env), Arity)) -> Self {
-            Self {
-                f: pair.0,
-                arity: pair.1,
-            }
+        pub fn new(f: fn(&mut Env), arity: Arity) -> Self {
+            Self { f, arity }
         }
     }
 
