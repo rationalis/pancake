@@ -23,18 +23,21 @@ pub mod types {
     pub type Arity = Option<(u8, u8)>;
 
     #[derive(Clone)]
-    pub struct Op(fn(&mut Env), Option<(u8, u8)>);
+    pub struct Op {
+        pub f: fn(&mut Env),
+        pub arity: Arity
+    }
 
     use std::fmt;
     impl fmt::Debug for Op {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-            write!(f, "Op {}", self.0 as usize)
+            write!(f, "Op {}", self.f as usize)
         }
     }
 
     impl PartialEq for Op {
         fn eq(&self, other: &Self) -> bool {
-            self.0 as usize == other.0 as usize
+            self.f as usize == other.f as usize
         }
     }
 
@@ -42,10 +45,10 @@ pub mod types {
 
     impl Op {
         pub fn new(pair: (fn(&mut Env), Arity)) -> Self {
-            Self(pair.0, pair.1)
-        }
-        pub fn f(&self) -> fn(&mut Env) {
-            self.0
+            Self {
+                f: pair.0,
+                arity: pair.1
+            }
         }
     }
 

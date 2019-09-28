@@ -1,5 +1,5 @@
 use crate::parse::*;
-use crate::types::{Atom, Env, Identifier, Stack};
+use crate::types::{Arity, Atom, Env, Identifier, Stack};
 
 pub fn eval_call(quotation: Atom, env: &mut Env) {
     if let Atom::Quotation(q) = quotation {
@@ -21,6 +21,82 @@ pub fn eval_function(params: Vec<Identifier>, body: Stack, env: &mut Env) {
     }
 }
 
+pub fn arity(f: Atom, env: &mut Env) -> Arity {
+    use crate::types::Op as Op;
+    let cond: Op = Op::new(get_boolean_op("cond").unwrap());
+
+    use Atom::*;
+    use crate::ops::get_boolean_op;
+
+    let params: Vec<Identifier>;
+    let quot: Vec<Atom>;
+    if let Function(p, q) = f {
+        params = p;
+        quot = q;
+    } else if let Quotation(q) = f {
+        params = Vec::new();
+        quot = q;
+    } else {
+        panic!("arity called on non-function");
+    }
+
+    let mut arities: Vec<Arity> = Vec::new();
+
+    for atom in quot {
+        let a: Arity = match atom {
+            Bool(_) | Num(_) | Symbol(_) => Some((0,1)),
+            Quotation(_) | Function(_, _) => arity(atom, env),
+            Op(op) => {
+                if op != cond {
+                    op.arity
+                } else {
+                    let a = arities.pop();
+                    let b = arities.pop();
+                    // We just assume that, if one branch has undefined arity,
+                    // the branches must agree.
+                    if let (Some(a), Some(b)) = (a, b) {
+                        if a.is_some() && b.is_some() {
+                            assert_eq!(a, b);
+                            a
+                        } else if a.is_some() {
+                            a
+                        } else if b.is_some() {
+                            b
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    }
+                }
+            }
+            _ => None
+        };
+        arities.push(a);
+    }
+
+    let mut num_in: u8 = params.len() as u8;
+    let mut num_out: u8 = 0;
+
+    for arity in arities {
+        if let Some((in1, out1)) = arity {
+            if in1 > num_out {
+                num_in += in1 - num_out;
+                num_out = out1;
+            } else if in1 == num_out {
+                num_out = out1;
+            } else if in1 < num_out {
+                num_out -= in1;
+                num_out += out1;
+            }
+        } else {
+            return None;
+        }
+    }
+
+    Some((num_in, num_out))
+}
+
 /// Take an Atom and evaluate its effect on the stack. For basic primitives,
 /// this simply pushes them onto the stack.
 pub fn eval_atom(atom: Atom, env: &mut Env) {
@@ -36,7 +112,7 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
     match atom {
         Bool(_) | Num(_) | Quotation(_) | Symbol(_) | Function(_,_) => env.push_atom(atom),
         Op(op) => {
-            op.f()(env);
+            (op.f)(env);
         }
         QuotationStart => {
             env.push_blank(true);
