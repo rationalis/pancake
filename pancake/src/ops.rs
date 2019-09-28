@@ -1,4 +1,4 @@
-use crate::arity::arity;
+use crate::arity::arity_fn;
 use crate::eval::{eval_call, eval_function};
 use crate::types::Op as O;
 use crate::types::{Atom, Env};
@@ -172,7 +172,7 @@ pub fn get_stack_op(op: &str) -> Option<O> {
         "keep" => O::new(
             |env| {
                 let q = env.pop_atom();
-                let arity = arity(&q, env);
+                let arity = arity_fn(&q, env);
                 if let Some((num_in, _)) = arity {
                     let last_n: Vec<Atom>;
                     {

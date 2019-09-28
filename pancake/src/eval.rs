@@ -27,9 +27,26 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
     // Currently Atom::QuotationStart enters lazy mode and Atom::QuotationEnd
     // closes it. If/when it gets more complex there should be a more complex
     // guard here.
-    if env.lazy_mode() && atom != Atom::QuotationStart && atom != Atom::QuotationEnd {
+    if env.lazy_mode() && atom != QuotationStart && atom != QuotationEnd {
         env.push_atom(atom);
         return;
+    }
+
+    if !env.lazy_mode() {
+        if let Quotation(_) | Function(_, _) = atom {
+        } else {
+            use crate::arity::arity_atom;
+            let arity = arity_atom(&atom, env, &mut Vec::new());
+            if let Some((num_in, _)) = arity {
+                let stack_len = env.last_frame().stack.len();
+                if stack_len < num_in as usize {
+                    panic!(
+                        "{:#?} expected {} arguments but {} were given",
+                        atom, num_in, stack_len
+                    );
+                }
+            }
+        }
     }
 
     use Atom::*;
