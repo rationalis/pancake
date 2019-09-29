@@ -120,7 +120,6 @@ pub mod types {
     pub struct Frame {
         pub stack: Stack,
         pub context: Context,
-        pub params: Context,
         pub lazy: bool,
     }
 
@@ -128,7 +127,6 @@ pub mod types {
         Frame {
             stack: Stack::with_capacity(10),
             context: Context::new(),
-            params: Context::new(),
             lazy: false,
         }
     }
@@ -195,7 +193,7 @@ pub mod types {
                 bound_params.insert(ident, self.pop_atom())
             }
             self.push_blank(false);
-            self.last_frame().params = bound_params;
+            self.last_frame().context = bound_params;
         }
 
         pub fn unbind_params(&mut self) {
@@ -204,11 +202,6 @@ pub mod types {
         }
 
         pub fn find_var(&self, ident: &Identifier) -> Option<Atom> {
-            if let Some(f) = self.frames.last() {
-                if let Some(atom) = f.params.get(ident) {
-                    return Some(atom.clone());
-                }
-            }
             for frame in self.frames.iter().rev() {
                 let context = &frame.context;
                 if let Some(atom) = context.get(ident) {

@@ -178,3 +178,21 @@ fn keep() {
 ",
     );
 }
+
+#[test]
+fn linear_search() {
+    assert_prog_output(
+        btoa(vec![false, true, true, true, false, false]),
+        r"
+fn search L e = L [e ==] map [or] reduce_inner splat
+let L = [1 2 3]list
+L 0 search
+L 1 search
+L 2 search
+L 3 search
+L 4 search
+L 15 search
+",
+    );
+}
+

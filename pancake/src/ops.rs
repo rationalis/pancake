@@ -1,5 +1,5 @@
 use crate::arity::arity_fn;
-use crate::eval::{eval_call, eval_function};
+use crate::eval::{eval_call, eval_call_quotation, eval_call_function};
 use crate::types::Op as O;
 use crate::types::{Atom, Env};
 
@@ -17,7 +17,7 @@ pub fn get_boolean_op(op: &str) -> Option<O> {
         "or" => atomify!("or" ((a:Bool,b:Bool)->Bool) {a || b}),
         "cond" => atomify!("cond" ((cond:Bool, if_q:Quotation, else_q:Quotation)) {
             let q = if cond { if_q } else { else_q };
-            eval_function(Vec::new(), q, env);
+            eval_call_function(Vec::new(), q, env);
         }),
         "not" => atomify!("not" ((a:Bool)->Bool) {!a}),
         "if" => atomify!("if" ((cond:Bool, body_q:Quotation)) {
@@ -25,7 +25,7 @@ pub fn get_boolean_op(op: &str) -> Option<O> {
                 env.using_for_else = true;
             }
             if cond {
-                eval_function(Vec::new(), body_q, env);
+                eval_call_function(Vec::new(), body_q, env);
                 if env.loop_like {
                     env.for_else = false;
                 }
@@ -54,7 +54,7 @@ pub fn get_stack_op(op: &str) -> Option<O> {
             |env| {
                 let q = env.pop_atom();
                 env.push_blank(false);
-                eval_call(q, env);
+                eval_call_quotation(q, env);
                 let stack = env.pop().unwrap().stack;
                 env.push_atom(Atom::List(stack));
             },
@@ -62,7 +62,6 @@ pub fn get_stack_op(op: &str) -> Option<O> {
         ),
         "map" => atomify!("map" ((list:List, q:Quotation)->List) {
             {
-                let q = Quotation(q);
                 env.for_else = true;
                 env.loop_like = true;
                 let new_list = list
@@ -83,7 +82,6 @@ pub fn get_stack_op(op: &str) -> Option<O> {
                 env.for_else = true;
                 env.loop_like = true;
                 env.push_blank(false);
-                let q = Quotation(q);
                 let mut list = list.drain(..);
                 let first = list.next();
                 if let Some(a) = first {
@@ -108,10 +106,14 @@ pub fn get_stack_op(op: &str) -> Option<O> {
                 env.loop_like = true;
                 let n = env.pop_atom();
                 let q = env.pop_atom();
-                if let Atom::Num(times) = n {
-                    for _ in 0..times {
-                        eval_call(q.clone(), env);
+                if let Quotation(q) = q {
+                    if let Atom::Num(times) = n {
+                        for _ in 0..times {
+                            eval_call(q.clone(), env);
+                        }
                     }
+                } else {
+                    panic!("Tried to call a non-quotation.");
                 }
                 env.loop_like = false;
             },
@@ -125,7 +127,7 @@ pub fn get_stack_op(op: &str) -> Option<O> {
                 let body = env.pop_atom();
                 if let Atom::Quotation(body_q) = body {
                     if env.for_else {
-                        eval_function(Vec::new(), body_q, env);
+                        eval_call(body_q, env);
                     }
                 }
             },
@@ -139,7 +141,7 @@ pub fn get_stack_op(op: &str) -> Option<O> {
                 let body = env.pop_atom();
                 if let Atom::Quotation(body_q) = body {
                     if !env.for_else {
-                        eval_function(Vec::new(), body_q, env);
+                        eval_call(body_q, env);
                     }
                 }
             },
@@ -182,9 +184,11 @@ pub fn get_stack_op(op: &str) -> Option<O> {
                     env.push_blank(false);
                     env.last_frame().stack = last_n;
                     if let Function(p, q) = q {
-                        eval_function(p, q, env);
-                    } else {
+                        eval_call_function(p, q, env);
+                    } else if let Quotation(q) = q {
                         eval_call(q, env);
+                    } else {
+                        panic!("Tried to call a non-quotation.")
                     }
                     let a = env.pop_atom();
                     env.pop();

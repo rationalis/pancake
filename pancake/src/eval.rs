@@ -1,22 +1,26 @@
 use crate::parse::*;
 use crate::types::{Atom, Env, Identifier, Stack};
 
-pub fn eval_call(quotation: Atom, env: &mut Env) {
-    if let Atom::Quotation(q) = quotation {
-        for atom in q {
-            eval_atom(atom, env);
-        }
+pub fn eval_call(q: Vec<Atom>, env: &mut Env) {
+    for atom in q {
+        eval_atom(atom, env);
+    }
+}
+
+pub fn eval_call_quotation(callee: Atom, env: &mut Env) {
+    if let Atom::Quotation(q) = callee {
+        eval_call(q, env);
     } else {
         panic!("Tried to call a non-quotation.");
     }
 }
 
-pub fn eval_function(params: Vec<Identifier>, body: Stack, env: &mut Env) {
+pub fn eval_call_function(params: Vec<Identifier>, body: Stack, env: &mut Env) {
     if params.is_empty() {
-        eval_call(Atom::Quotation(body), env);
+        eval_call(body, env);
     } else {
         env.bind_params(params);
-        eval_call(Atom::Quotation(body), env);
+        eval_call(body, env);
         env.unbind_params();
     }
 }
@@ -24,12 +28,27 @@ pub fn eval_function(params: Vec<Identifier>, body: Stack, env: &mut Env) {
 /// Take an Atom and evaluate its effect on the stack. For basic primitives,
 /// this simply pushes them onto the stack.
 pub fn eval_atom(atom: Atom, env: &mut Env) {
-    // Currently Atom::QuotationStart enters lazy mode and Atom::QuotationEnd
-    // closes it. If/when it gets more complex there should be a more complex
-    // guard here.
-    if env.lazy_mode() && atom != QuotationStart && atom != QuotationEnd {
-        env.push_atom(atom);
-        return;
+    use Atom::*;
+
+    if env.lazy_mode() {
+        match atom {
+            QuotationStart | QuotationEnd => (),
+            Plain(ident) => {
+                match env.find_var(&ident) {
+                    Some(Function(params, body)) => {
+                        env.push_atom(Function(params, body));
+                        env.push_atom(Call);
+                    }
+                    Some(found_atom) => env.push_atom(found_atom),
+                    _ => {env.push_atom(Plain(ident));} // free variable
+                };
+                return;
+            },
+            _ => {
+                env.push_atom(atom);
+                return;
+            }
+        }
     }
 
     if !env.lazy_mode() {
@@ -49,7 +68,6 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
         }
     }
 
-    use Atom::*;
     match atom {
         Bool(_) | Num(_) | Quotation(_) | Symbol(_) | Function(_, _) => env.push_atom(atom),
         Op(op) => {
@@ -91,9 +109,15 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
                 panic!("Expected '<quotation> <ident> fn'.")
             }
         }
-        Call => eval_call(env.pop_atom(), env),
+        Call => {
+            match env.pop_atom() {
+                Quotation(q) => eval_call(q, env),
+                Function(p, b) => eval_call_function(p, b, env),
+                _ => {panic!("Tried to call non-quotation.");}
+            };
+        }
         Plain(ident) => match env.find_var(&ident) {
-            Some(Function(params, body)) => eval_function(params, body, env),
+            Some(Function(p, b)) => eval_call_function(p, b, env),
             Some(atom) => env.push_atom(atom),
             _ => panic!("Unrecognized identifier: {}", ident),
         },
