@@ -142,13 +142,9 @@ fn parse_expr(expr: &str) -> Vec<Atom> {
 }
 
 fn parse_let(line: &str) -> Option<Vec<Atom>> {
-    let parser = preceded(
-        tuple((tag("let"), multispace1)),
-        terminated(
-            parse_ident_nom_,
-            tuple((multispace1, tag("="))),
-        ),
-    );
+    let prefix = tuple((tag("let"), multispace1));
+    let suffix = tuple((multispace1, tag("=")));
+    let parser = delimited(prefix, parse_ident_nom_, suffix);
 
     let result = parser(line);
 
