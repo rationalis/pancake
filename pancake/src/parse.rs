@@ -1,6 +1,5 @@
 use crate::ops::*;
 use crate::types::{Atom, NumType};
-use regex::Regex;
 
 use inlinable_string::InlinableString;
 
@@ -143,22 +142,29 @@ fn parse_expr(expr: &str) -> Vec<Atom> {
 }
 
 fn parse_let(line: &str) -> Option<Vec<Atom>> {
-    lazy_static! {
-        static ref RE: Regex = Regex::new(r"^let (?P<ident>[a-z_]+?) = (?P<expr>.*)").unwrap();
-    }
-    let captures = RE.captures(line);
-    if let Some(caps) = captures {
-        // TODO: handle forbidden identifiers
-        let ident = InlinableString::from(&caps["ident"]);
-        let expr = &caps["expr"];
+    let parser = preceded(
+        tuple((tag("let"), multispace1)),
+        terminated(
+            parse_ident_nom_,
+            tuple((multispace1, tag("="))),
+        ),
+    );
 
-        return Some(vec![
-            Atom::Quotation(parse_expr(expr)),
-            Atom::Symbol(ident),
-            Atom::DefVar,
-        ]);
+    let result = parser(line);
+
+    if let Ok((expr, ident_atom)) = result {
+        if let Atom::Plain(ident) = ident_atom {
+            Some(vec![
+                Atom::Quotation(parse_expr(expr)),
+                Atom::Symbol(ident),
+                Atom::DefVar,
+            ])
+        } else {
+            unreachable!();
+        }
+    } else {
+        None
     }
-    None
 }
 
 fn parse_fn(line: &str) -> Option<Vec<Atom>> {

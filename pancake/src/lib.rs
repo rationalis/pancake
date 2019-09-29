@@ -1,7 +1,5 @@
 #![feature(proc_macro_hygiene)]
 
-#[macro_use]
-extern crate lazy_static;
 //#[macro_use] extern crate flamer;
 
 pub mod arity;
