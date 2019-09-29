@@ -2,17 +2,24 @@
 
 ## Work Queue
 
+- Establish better scoping rules
+  - Primarily, enable eager capture + late binding free variables
+- Delineate static and dynamic arity
+  - Optimize arity checking a bit if possible
+- Add more combinators as I go along
+  - Hopefully, arity improvements will allow more powerful general combinators
 - Write some docstrings with test examples.
+  - I keep saying I should but I don't. ><
 - Lists/composites
+  - Dictionaries
   - `match`
-- Combinators which either significantly improve ergonomics or add new
-  capabilities (e.g. TODO)
+  - Indexing
+  - `any`, `all`
 - Functions defined for singular values (ad hoc polymorphism more generally)
 - String types / polymorphism, standard string operations (split, substring,
   index, concat, format)
   - Uses of traits like Add requires changing macros, some kind of basic type
     checking
-- `print`
 
 ## Roadmap
 
