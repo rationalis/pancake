@@ -1,5 +1,5 @@
 use crate::arity::arity_fn;
-use crate::eval::{eval_call, eval_call_quotation, eval_call_function};
+use crate::eval::{eval_call, eval_call_function, eval_call_quotation};
 use crate::types::Op as O;
 use crate::types::{Atom, Env};
 

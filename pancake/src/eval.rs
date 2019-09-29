@@ -40,10 +40,12 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
                         env.push_atom(Call);
                     }
                     Some(found_atom) => env.push_atom(found_atom),
-                    _ => {env.push_atom(Plain(ident));} // free variable
+                    _ => {
+                        env.push_atom(Plain(ident));
+                    } // free variable
                 };
                 return;
-            },
+            }
             _ => {
                 env.push_atom(atom);
                 return;
@@ -113,7 +115,9 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
             match env.pop_atom() {
                 Quotation(q) => eval_call(q, env),
                 Function(p, b) => eval_call_function(p, b, env),
-                _ => {panic!("Tried to call non-quotation.");}
+                _ => {
+                    panic!("Tried to call non-quotation.");
+                }
             };
         }
         Plain(ident) => match env.find_var(&ident) {

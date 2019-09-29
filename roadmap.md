@@ -2,8 +2,6 @@
 
 ## Work Queue
 
-- Establish better scoping rules
-  - Primarily, enable eager capture + late binding free variables
 - Delineate static and dynamic arity
   - Optimize arity checking a bit if possible
 - Add more combinators as I go along
