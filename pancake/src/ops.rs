@@ -1,5 +1,5 @@
 use crate::arity::arity_fn;
-use crate::eval::{eval_call, eval_call_function, eval_call_quotation};
+use crate::eval::{eval_call, eval_call_function};
 use crate::types::Op as O;
 use crate::types::{Atom, Env};
 
@@ -17,7 +17,7 @@ pub fn get_boolean_op(op: &str) -> Option<O> {
         "or" => atomify!("or" ((a:Bool,b:Bool)->Bool) {a || b}),
         "cond" => atomify!("cond" ((cond:Bool, if_q:Quotation, else_q:Quotation)) {
             let q = if cond { if_q } else { else_q };
-            eval_call_function(Vec::new(), q, env);
+            eval_call(q, env);
         }),
         "not" => atomify!("not" ((a:Bool)->Bool) {!a}),
         "if" => atomify!("if" ((cond:Bool, body_q:Quotation)) {
@@ -25,7 +25,7 @@ pub fn get_boolean_op(op: &str) -> Option<O> {
                 env.using_for_else = true;
             }
             if cond {
-                eval_call_function(Vec::new(), body_q, env);
+                eval_call(body_q, env);
                 if env.loop_like {
                     env.for_else = false;
                 }
@@ -50,16 +50,14 @@ pub fn get_stack_op(op: &str) -> Option<O> {
             },
             Some((1, 2)),
         ),
-        "list" => O::new(
-            |env| {
-                let q = env.pop_atom();
+        "list" => atomify!("list" ((q:Quotation)->List) {
+            {
                 env.push_blank(false);
-                eval_call_quotation(q, env);
+                eval_call(q, env);
                 let stack = env.pop().unwrap().stack;
-                env.push_atom(Atom::List(stack));
-            },
-            Some((1, 1)),
-        ),
+                stack
+            }
+        }),
         "map" => atomify!("map" ((list:List, q:Quotation)->List) {
             {
                 env.for_else = true;
@@ -106,14 +104,19 @@ pub fn get_stack_op(op: &str) -> Option<O> {
                 env.loop_like = true;
                 let n = env.pop_atom();
                 let q = env.pop_atom();
-                if let Quotation(q) = q {
-                    if let Atom::Num(times) = n {
-                        for _ in 0..times {
-                            eval_call(q.clone(), env);
-                        }
+                let (p, b) = {
+                    if let Quotation(q) = q {
+                        (Vec::new(), q)
+                    } else if let Function(p, b) = q {
+                        (p, b)
+                    } else {
+                        panic!("Tried to call a non-quotation.");
                     }
-                } else {
-                    panic!("Tried to call a non-quotation.");
+                };
+                if let Atom::Num(times) = n {
+                    for _ in 0..times {
+                        eval_call_function(&p, b.clone(), env);
+                    }
                 }
                 env.loop_like = false;
             },
@@ -159,12 +162,12 @@ pub fn get_stack_op(op: &str) -> Option<O> {
             },
             Some((0, 0)),
         ),
+        // TODO: probably want a different syntax for getting functions literally
         "get" => O::new(
             |env| {
                 if let Atom::Symbol(ident) = env.pop_atom() {
                     match env.find_var(&ident) {
-                        Some(Atom::Function(_, body)) => env.push_atom(Atom::Quotation(body)),
-                        Some(_) => panic!("Tried to get a non-function."),
+                        Some(a) => env.push_atom(a),
                         _ => panic!("Unrecognized identifier: {}", ident),
                     }
                 }
@@ -184,7 +187,7 @@ pub fn get_stack_op(op: &str) -> Option<O> {
                     env.push_blank(false);
                     env.last_frame().stack = last_n;
                     if let Function(p, q) = q {
-                        eval_call_function(p, q, env);
+                        eval_call_function(&p, q, env);
                     } else if let Quotation(q) = q {
                         eval_call(q, env);
                     } else {

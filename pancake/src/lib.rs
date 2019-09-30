@@ -187,7 +187,7 @@ pub mod types {
             self.last_frame().context.insert(ident, atom)
         }
 
-        pub fn bind_params(&mut self, idents: Vec<Identifier>) {
+        pub fn bind_params(&mut self, idents: &Vec<Identifier>) {
             let mut bound_params = Context::with_capacity(idents.len());
             for ident in idents.iter().rev() {
                 bound_params.insert(ident, self.pop_atom())

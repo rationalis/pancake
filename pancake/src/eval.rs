@@ -15,7 +15,7 @@ pub fn eval_call_quotation(callee: Atom, env: &mut Env) {
     }
 }
 
-pub fn eval_call_function(params: Vec<Identifier>, body: Stack, env: &mut Env) {
+pub fn eval_call_function(params: &Vec<Identifier>, body: Stack, env: &mut Env) {
     if params.is_empty() {
         eval_call(body, env);
     } else {
@@ -114,14 +114,14 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
         Call => {
             match env.pop_atom() {
                 Quotation(q) => eval_call(q, env),
-                Function(p, b) => eval_call_function(p, b, env),
+                Function(p, b) => eval_call_function(&p, b, env),
                 _ => {
                     panic!("Tried to call non-quotation.");
                 }
             };
         }
         Plain(ident) => match env.find_var(&ident) {
-            Some(Function(p, b)) => eval_call_function(p, b, env),
+            Some(Function(p, b)) => eval_call_function(&p, b, env),
             Some(atom) => env.push_atom(atom),
             _ => panic!("Unrecognized identifier: {}", ident),
         },

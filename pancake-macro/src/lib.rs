@@ -190,9 +190,13 @@ fn impl_atomify(iter: impl Iterator<Item = TT>) -> TS {
     };
 
     let expr: TS2 = if let Some(return_type) = return_type {
-        quote! {
-            let output = #return_type(#expr);
-            env.push_atom(output);
+        if return_type.to_string() == "Any" {
+            quote! {#expr}
+        } else {
+            quote! {
+                let output = #return_type(#expr);
+                env.push_atom(output);
+            }
         }
     } else {
         quote! {#expr}
