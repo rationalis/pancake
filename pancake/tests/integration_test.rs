@@ -196,3 +196,25 @@ L 15 search
     );
 }
 
+#[test]
+fn binary_search() {
+    assert_prog_output(
+        btoa(vec![true, true, true]),
+        r"
+fn mid = lo hi + 2 /
+fn cmp v1 v2 L_q Eq_q G_q = v1 v2 == [Eq_q] [v1 v2 < [L_q] [G_q] cond] cond call
+fn go_lo = L e lo mid 1 - bs
+fn go_hi = L e mid 1 + hi bs
+fn do_cmp = [go_lo] [mid] [go_hi] cmp
+fn term_cond = [!= lo hi == and]keep [drop drop -1] [do_cmp] cond
+fn bs L e lo hi = lo print hi print e L mid at term_cond
+let L = [0 1 2 3 4 5 6 7 8 9 10]list
+L 7 0 10 bs
+7 ==
+L 4 3 9 bs
+4 ==
+L 11 0 10 bs
+-1 ==
+",
+    );
+}

@@ -71,7 +71,9 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
     }
 
     match atom {
-        Bool(_) | Num(_) | Quotation(_) | Symbol(_) | Function(_, _) => env.push_atom(atom),
+        Bool(_) | Num(_) | Quotation(_) | Symbol(_) | Function(_, _) | List(_) => {
+            env.push_atom(atom);
+        }
         Op(op) => {
             (op.f)(env);
         }

@@ -202,6 +202,12 @@ pub fn get_stack_op(op: &str) -> Option<O> {
             },
             None,
         ),
+        "at" => atomify!("at" ((list:List,n:Num)->Any) {
+            list[n as usize].clone()
+        }),
+        "append" => unimplemented!(),
+        "curry" => unimplemented!(),
+        "cat" => unimplemented!(),
         _ => {
             return None;
         }
