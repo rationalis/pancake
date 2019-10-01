@@ -207,7 +207,7 @@ fn go_lo = L e lo mid 1 - bs
 fn go_hi = L e mid 1 + hi bs
 fn do_cmp = [go_lo] [mid] [go_hi] cmp
 fn term_cond = [!= lo hi == and]keep [drop drop -1] [do_cmp] cond
-fn bs L e lo hi = lo print hi print e L mid at term_cond
+fn bs L e lo hi = e L mid at term_cond
 let L = [0 1 2 3 4 5 6 7 8 9 10]list
 L 7 0 10 bs
 7 ==
