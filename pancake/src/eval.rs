@@ -127,9 +127,6 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
             Some(atom) => env.push_atom(atom),
             _ => panic!("Unrecognized identifier: {}", ident),
         },
-        _ => {
-            panic!("Unexpected atom type {:#?}", atom);
-        }
     }
 }
 

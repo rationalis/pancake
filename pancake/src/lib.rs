@@ -6,6 +6,7 @@ pub mod arity;
 pub mod eval;
 pub mod ops;
 pub mod parse;
+pub mod typeck;
 
 pub mod types {
     use inlinable_string::InlinableString;

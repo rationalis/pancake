@@ -14,6 +14,7 @@ harness = false
 [dependencies]
 nom = "5"
 inlinable_string = "0.1"
+rsmt2 = "0.10.0"
 # flame = "0.2.2"
 # flamer = "0.3"
 
