@@ -34,6 +34,11 @@
   ))
 )
 
+(define-fun is_prefix ((prefix LType) (seq LType)) Bool
+  (exists ((suffix LType))
+    (= seq (append prefix suffix)))
+)
+
 (define-fun-rec rev ((L LType)) LType
   (match L (
     ((cons H T)
@@ -53,17 +58,23 @@
   ))
 )
 
-; TODO
-; (define-fun compose_fns ((T1 Type) (T2 Type)) Type
-;   (match T1 (
-;     (func I O)
-;     (int)
-;     (bool)
-;   )
-; )
 
+
+(define-fun peel_prop_holds ((prefix LType) (seq LType)) Bool
+  (let ((suffix (peel prefix seq)))
+    (xor
+      (= none suffix)
+      (= seq (append prefix (thing suffix))))))
 
 (push)
+
+; I'm not sure why this is *necessary*, but it formalizes the pseudo-inverse
+; relationship between append and peel. Not doing so leads to incorrect answers,
+; somehow.
+(assert (exists ((prefix LType) (seq LType))
+  (not (peel_prop_holds prefix seq))
+))
+
 (assert (not (distinct int bool)))
 (assert (not (= (append nil nil) nil)))
 (assert (not (= (append nil int1) int1)))
@@ -86,12 +97,14 @@
 (check-sat)
 ; This should be *unsat* -- the negation of all of the above assertions should
 ; hold deterministically; there is no variable to be instantiated by Z3
+
+; I'm not sure why this exists, but it does. Here be dragons.
+(define-const absurd LType (thing none))
+
 (pop)
 
 
 
-; I'm not sure why this exists, but it does. Here be dragons.
-(define-const absurd LType (thing none))
 
 ; Convert non-functions to nullary functions
 (define-fun to_func ((f Type)) Type
@@ -132,10 +145,28 @@
 (declare-const test_stack LType)
 (declare-const test_stack_out Option)
 
-; (assert (= test_stack (append int2 int2)))
-
-(assert (= test_stack_out (apply_many add1 (some test_stack))))
+(assert (= test_stack_out (apply_many add3 (some test_stack))))
 (assert (not (= none test_stack_out)))
+
+; (declare-fun compose (LType) Type)
+
+; (assert (forall ((fs LType))
+;   (! (exists ((input_stack LType) (output_stack LType))
+;       (and
+;         (= (some output_stack) (apply_many fs (some input_stack)))
+;         (=
+;           (apply (func input_stack output_stack) input_stack)
+;           (apply_many fs (some input_stack))
+;         )
+;         (= (compose fs) (func input_stack output_stack))
+;       )
+;     )
+;     :pattern ((compose fs))
+;   )
+; ))
+
+; (declare-const add3_by_composing Type)
+; (assert (= add3_by_composing (compose add3)))
 
 (check-sat)
 (get-model)
