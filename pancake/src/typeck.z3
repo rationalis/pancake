@@ -1,4 +1,3 @@
-;(declare-datatypes Type)
 (declare-datatypes () (
   (Type
   int
@@ -6,17 +5,15 @@
   (func (in LType) (out LType)))
 
   (LType nil (cons (head Type) (tail LType)))
+  (Option (none) (some (thing LType)))
 ))
-
-(declare-datatypes () ((Option (none) (some (thing LType)))))
 
 (define-fun cons_int ((x LType)) LType (cons int x))
 (define-fun cons_bool ((x LType)) LType (cons bool x))
 (define-const int1 LType (cons_int nil))
 (define-const int2 LType (cons_int int1))
 (define-const int3 LType (cons_int int2))
-
-(define-const i Int 1)
+(define-const bool1 LType (cons_int nil))
 
 (define-fun-rec peel ((prefix LType) (seq LType)) Option
   (match prefix (
@@ -66,44 +63,79 @@
 ; )
 
 
+(push)
+(assert (not (distinct int bool)))
+(assert (not (= (append nil nil) nil)))
+(assert (not (= (append nil int1) int1)))
+(assert (not (= (append int1 nil) int1)))
+(assert (not (= (append int2 int1) int3)))
+(assert (not (= (append int1 int2) int3)))
+(assert (not (= (rev int2) int2)))
+(assert (not (= (cons_bool (cons_int nil)) (rev (cons_int (cons_bool nil))))))
+(assert (not (= (cons_int (cons_bool nil)) (rev (cons_bool (cons_int nil))))))
+(assert (not (= (last (cons_bool (cons_bool (cons_int nil)))) int)))
+(assert (not (is_some (peel int1 int1))))
+(assert (not (not (is_some (peel int2 int1)))))
+(assert (not (not (is_some (peel int3 int1)))))
+(assert (not (is_some (peel int1 int2))))
+(assert (not (is_some (peel int2 int2))))
+(assert (not (not (is_some (peel int3 int2)))))
+(assert (not (is_some (peel int1 int3))))
+(assert (not (is_some (peel int2 int3))))
+(assert (not (is_some (peel int3 int3))))
+(check-sat)
+; This should be *unsat* -- the negation of all of the above assertions should
+; hold deterministically; there is no variable to be instantiated by Z3
+(pop)
 
-; General tests
-(assert (distinct int bool))
 
-; Test for append
-(assert (= (append nil nil) nil))
-
-(assert (= (append nil int1) int1))
-(assert (= (append int1 nil) int1))
-
-(assert (= (append int2 int1) int3))
-(assert (= (append int1 int2) int3))
-
-; Test for rev
-(assert (= (rev int2) int2))
-(assert (= (cons_bool (cons_int nil)) (rev (cons_int (cons_bool nil)))))
-(assert (= (cons_int (cons_bool nil)) (rev (cons_bool (cons_int nil)))))
-
-; Test for last
-(assert (= (last (cons_bool (cons_bool (cons_int nil)))) int))
-
-; Test for peel
-(assert (is_some (peel int1 int1)))
-(assert (not (is_some (peel int2 int1))))
-(assert (not (is_some (peel int3 int1))))
-
-(assert (is_some (peel int1 int2)))
-(assert (is_some (peel int2 int2)))
-(assert (not (is_some (peel int3 int2))))
-
-(assert (is_some (peel int1 int3)))
-(assert (is_some (peel int2 int3)))
-(assert (is_some (peel int3 int3)))
 
 ; I'm not sure why this exists, but it does. Here be dragons.
 (define-const absurd LType (thing none))
 
+; Convert non-functions to nullary functions
+(define-fun to_func ((f Type)) Type
+  (match f (
+    ((func I O) f)
+    (int (func nil int1))
+    (bool (func nil bool1))
+  ))
+)
 
+(define-fun-rec apply ((f Type) (stack LType)) Option
+  (match f (
+    ((func I O) (match (peel I stack) (
+      ((some S) (some (append O S)))
+      (none none)
+    )))
+    (X (apply (to_func f) stack))
+  ))
+)
+
+(define-fun-rec apply_many ((fs LType) (stack Option)) Option
+  (match stack (
+    ((some S) (match fs (
+      ((cons f T) (apply_many T (apply f S)))
+      (nil stack)
+    )))
+    (none none)
+  ))
+)
+
+(define-const add Type (func int2 int1))
+(assert (= (apply add int2) (some int1)))
+(assert (= none (apply add nil)))
+
+(define-const add1 LType (cons add nil))
+(define-const add3 LType (cons add (cons add add1)))
+
+(declare-const test_stack LType)
+(declare-const test_stack_out Option)
+
+; (assert (= test_stack (append int2 int2)))
+
+(assert (= test_stack_out (apply_many add1 (some test_stack))))
+(assert (not (= none test_stack_out)))
 
 (check-sat)
 (get-model)
