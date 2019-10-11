@@ -135,6 +135,7 @@
   ))
 )
 
+(push)
 (define-const add Type (func int2 int1))
 (assert (= (apply add int2) (some int1)))
 (assert (= none (apply add nil)))
@@ -148,25 +149,82 @@
 (assert (= test_stack_out (apply_many add3 (some test_stack))))
 (assert (not (= none test_stack_out)))
 
-; (declare-fun compose (LType) Type)
+(check-sat)
+(get-model)
+(pop)
+
+(define-const add Type (func int2 int1))
+(assert (= (apply add int2) (some int1)))
+(assert (= none (apply add nil)))
+
+(define-const add1 LType (cons add nil))
+(define-const add3 LType (cons add (cons add add1)))
+
+
+(define-fun helper ((I2 LType) (O1 LType)) Option
+  (peel (rev O1) (rev I2))
+)
+
+; O1: B B I2: A A B B
+; O1: A A B B I2: B B
+
+(define-fun-rec compose_pair_IO
+  ((I1 LType) (I2 LType) (O1 LType) (O2 LType)) Option
+
+  (let ((P1 (helper I2 O1)) (P2 (helper O1 I2)))
+    (match P1 (
+      ((some p1) (some (cons (func (append (rev p1) I1) O2) nil)))
+      (none (match P2 (
+        ((some p2) (some (cons (func I1 (append (rev p2) O2)) nil)))
+        (none none)
+      )))
+    ))
+  )
+)
+
+(define-fun-rec compose_pair ((f1 Type) (f2 Type)) Option
+  (match f1 (
+    ((func I1 O1) (match f2 (
+      ((func I2 O2) (compose_pair_IO I1 I2 O1 O2))
+      (Y (compose_pair f1 (to_func f2)))
+    )))
+    (X (compose_pair (to_func f1) f2))
+  ))
+)
+
+(define-fun helper2 ((H Type) (tail Option)) Option
+  (match tail (
+    ((some ty) (compose_pair H (head ty)))
+    (none none)
+  ))
+)
+
+(define-fun-rec compose ((fs LType)) Option
+  (match fs (
+    ((cons H T) (helper2 H (compose T)))
+    (nil (some (cons (func nil nil) nil)))
+  ))
+)
 
 ; (assert (forall ((fs LType))
-;   (! (exists ((input_stack LType) (output_stack LType))
+;   (exists ((input_stack LType) (output_stack Option))
 ;       (and
-;         (= (some output_stack) (apply_many fs (some input_stack)))
+;         (= output_stack (apply_many fs (some input_stack)))
+;         (not (= none output_stack))
 ;         (=
-;           (apply (func input_stack output_stack) input_stack)
+;           (apply (func input_stack (thing output_stack)) input_stack)
 ;           (apply_many fs (some input_stack))
 ;         )
-;         (= (compose fs) (func input_stack output_stack))
+;         (= (compose fs) (func input_stack (thing output_stack)))
 ;       )
-;     )
-;     :pattern ((compose fs))
 ;   )
 ; ))
 
-; (declare-const add3_by_composing Type)
+(assert (not (= (compose (cons (func int2 int1) (cons (func int3 int1) nil))) (some (cons (func (cons int int3) int1) nil)))))
+
+; (declare-const add3_by_composing Option)
 ; (assert (= add3_by_composing (compose add3)))
+; (assert (not (= none add3_by_composing)))
 
 (check-sat)
-(get-model)
+; (get-model)
