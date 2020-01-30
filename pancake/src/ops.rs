@@ -1,7 +1,8 @@
 use crate::arity::arity_fn;
 use crate::eval::{eval_call, eval_call_function};
 use crate::types::Op as O;
-use crate::types::{Atom, Env};
+use crate::types::Atom;
+use crate::vm::Env;
 
 use Atom::*;
 

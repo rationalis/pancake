@@ -1,5 +1,6 @@
 use crate::ops::get_boolean_op;
-use crate::types::{Arity, Atom, Env};
+use crate::types::{Arity, Atom};
+use crate::vm::Env;
 
 pub fn arity_atom(atom: &Atom, env: &mut Env, arities: &mut Vec<Arity>) -> Arity {
     let cond = get_boolean_op("cond").unwrap();

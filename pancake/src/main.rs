@@ -1,7 +1,8 @@
 use std::io;
 
 use pancake::eval::eval_line;
-use pancake::types::{Atom, Context, Env, Op};
+use pancake::types::{Atom, Op};
+use pancake::vm::{Context, Env};
 
 fn main() {
     println!("Op size in bytes: {}", std::mem::size_of::<Op>());

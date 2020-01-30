@@ -1,5 +1,6 @@
 use crate::parse::*;
-use crate::types::{Atom, Env, Identifier, Stack};
+use crate::types::Atom;
+use crate::vm::{Env, Identifier, Stack};
 
 pub fn eval_call(q: Vec<Atom>, env: &mut Env) {
     for atom in q {
@@ -125,7 +126,7 @@ pub fn eval_atom(atom: Atom, env: &mut Env) {
         Plain(ident) => match env.find_var(&ident) {
             Some(Function(p, b)) => eval_call_function(&p, b, env),
             Some(atom) => env.push_atom(atom),
-            _ => panic!("Unrecognized identifier: {}", ident),
+            None => panic!("Unrecognized identifier: {}", ident),
         },
     }
 }
