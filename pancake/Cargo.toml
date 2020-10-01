@@ -15,6 +15,7 @@ harness = false
 nom = "5"
 inlinable_string = "0.1"
 rsmt2 = "0.10.0"
+rusty_v8 = "0.9.1"
 # flame = "0.2.2"
 # flamer = "0.3"
 
