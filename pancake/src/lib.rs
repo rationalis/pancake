@@ -6,7 +6,11 @@ pub mod arity;
 pub mod eval;
 pub mod ops;
 pub mod parse;
-pub mod typeck;
 pub mod types;
 pub mod vm;
+
+pub mod ast;
+pub mod vm2;
+pub mod inference_data;
+pub mod typeck;
 

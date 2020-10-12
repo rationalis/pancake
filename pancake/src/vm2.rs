@@ -28,16 +28,16 @@ impl<T: Clone> Context<T> {
         self.map.get(ident)
     }
 
-    pub fn insert(&mut self, ident: &str, elem: T) {
-        use crate::ops;
-        if SPECIAL_IDENTS.contains(&ident)
-            || ops::get_boolean_op(ident).is_some()
-            || ops::get_stack_op(ident).is_some()
-        {
-            panic!("Attempted to rebind reserved word {}.", ident);
-        }
+    pub fn insert(&mut self, ident: &str, elem: T) -> Option<T> {
+        // use crate::ops;
+        // if SPECIAL_IDENTS.contains(&ident)
+        //     || ops::get_boolean_op(ident).is_some()
+        //     || ops::get_stack_op(ident).is_some()
+        // {
+        //     panic!("Attempted to rebind reserved word {}.", ident);
+        // }
 
-        self.map.insert(Identifier::from(ident), elem);
+        self.map.insert(Identifier::from(ident), elem)
         // if self.map.insert(InlinableString::from(ident), atom).is_some() {
         //     panic!("Attempted to rebind existing variable {}.", ident);
         // }
@@ -45,7 +45,7 @@ impl<T: Clone> Context<T> {
 
     pub fn push(&mut self, elem: T) {
         let new_id = Identifier::from(format!("_{}", self.counter));
-        self.map.insert(new_id, elem);
+        self.map.insert(new_id.clone(), elem);
         self.stack.push(new_id);
         self.counter += 1;
     }
@@ -54,10 +54,21 @@ impl<T: Clone> Context<T> {
         self.map.get(&self.stack.pop().unwrap()).unwrap()
     }
 
-    pub fn in_child_scope<R>(&mut self, cb: impl FnOnce(&mut Self) -> R) -> R {
-        let temp = self.map.clone();
+    pub fn in_child_scope<R>(&self, cb: impl FnOnce(&mut Self) -> R) -> R {
+        // let temp = self.map.clone();
+        // let res = cb(self);
+        // self.map = temp;
+        // res
+        cb(&mut self.clone())
+    }
+
+    pub fn with_binding<R>(&mut self, ident: &str, elem: T,
+                           cb: impl FnOnce(&mut Self) -> R) -> R {
+        let temp = self.insert(ident, elem);
         let res = cb(self);
-        self.map = temp;
+        if let Some(prev) = temp {
+            self.insert(ident, prev);
+        }
         res
     }
 }
