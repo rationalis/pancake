@@ -18,7 +18,7 @@ pub fn constrain(lhs: SimpleTypeRef, rhs: SimpleTypeRef, tvars: TVars) {
 
     let mut added_constraints = Vec::new();
 
-    let (lhs_match, rhs_match) = (&*lhs.clone(), &*rhs.clone());
+    let (lhs_match, rhs_match): (&SimpleType, &SimpleType) = (&lhs, &rhs);
     match (lhs_match, rhs_match) {
         (Function { lhs: l0, rhs: r0 }, Function { lhs: l1, rhs: r1 }) => {
             constrain(l1.clone(), l0.clone(), tvars);
@@ -28,36 +28,32 @@ pub fn constrain(lhs: SimpleTypeRef, rhs: SimpleTypeRef, tvars: TVars) {
             for key in fs1.keys() {
                 let type1 = fs1.get(key).unwrap().clone();
                 let type0 = fs0.get(key).unwrap().clone();
-                // constrain(type0, type1, tvars);
                 added_constraints.push((type0, type1));
             }
         }
-        (Variable(key), _) => {
-            if rhs.level(tvars) <= tvars.get(&key).level {
-                let lhs = tvars.get_mut(&key);
-                lhs.upper_bounds.push(rhs.clone());
-                for lower_bound in &lhs.lower_bounds {
-                    // constrain(lower_bound.clone(), rhs.clone(), tvars);
-                    added_constraints.push((lower_bound.clone(), rhs.clone()));
-                }
-            } else {
-                let rhs = extrude(rhs, false, lhs.level(tvars), tvars,
-                                  &mut HashMap::new());
-                added_constraints.push((lhs, rhs))
+        (Variable(key), _) if rhs.level(tvars) <= tvars.get(&key).level => {
+            let lhs = tvars.get_mut(&key);
+            lhs.upper_bounds.push(rhs.clone());
+            for lower_bound in &lhs.lower_bounds {
+                added_constraints.push((lower_bound.clone(), rhs.clone()));
             }
         }
-        (_, Variable(key)) => {
-            if lhs.level(tvars) <= tvars.get(&key).level {
-                let rhs = tvars.get_mut(&key);
-                rhs.lower_bounds.push(lhs.clone());
-                for upper_bound in &rhs.upper_bounds {
-                    added_constraints.push((lhs.clone(), upper_bound.clone()));
-                }
-            } else {
-                let lhs = extrude(lhs, true, rhs.level(tvars), tvars,
-                                  &mut HashMap::new());
-                added_constraints.push((lhs, rhs))
+        (_, Variable(key)) if lhs.level(tvars) <= tvars.get(&key).level => {
+            let rhs = tvars.get_mut(&key);
+            rhs.lower_bounds.push(lhs.clone());
+            for upper_bound in &rhs.upper_bounds {
+                added_constraints.push((lhs.clone(), upper_bound.clone()));
             }
+        }
+        (Variable(_), _) => {
+            let rhs = extrude(rhs, false, lhs.level(tvars), tvars,
+                              &mut HashMap::new());
+            added_constraints.push((lhs, rhs));
+        }
+        (_, Variable(_)) => {
+            let lhs = extrude(lhs, true, rhs.level(tvars), tvars,
+                              &mut HashMap::new());
+            added_constraints.push((lhs, rhs));
         }
         _ => { panic!(); }
     }
@@ -67,7 +63,7 @@ pub fn constrain(lhs: SimpleTypeRef, rhs: SimpleTypeRef, tvars: TVars) {
 }
 
 pub fn extrude(typ: SimpleTypeRef, polarity: bool, lvl: i32, tvars: TVars,
-           cache: &mut HashMap<TVarId, TVarId>) -> SimpleTypeRef {
+               cache: &mut HashMap<TVarId, TVarId>) -> SimpleTypeRef {
     use SimpleType::*;
     if typ.level(tvars) <= lvl {
         return typ;
@@ -141,12 +137,12 @@ pub fn infer_term(term: &Term, ctx: Ctx, tvars: TVars, lvl: i32) -> SimpleTypeRe
                              |ctx2| infer_term(body, ctx2, tvars, lvl))
         }
         Var(name) => match ctx.get(name) {
-            Some(t) => t.instantiate(lvl),
+            Some(t) => t.instantiate(tvars, lvl),
             None => panic!("Variable {} not found", name)
         }
         Lam(name, body) => {
             let param = tvars.fresh_var(lvl);
-            let body_typ = ctx.with_binding(name, param.into(), |ctx2|
+            let body_typ = ctx.with_binding(name, param.clone().into(), |ctx2|
                 infer_term(body, ctx2, tvars, lvl));
             Rc::new(Function {
                 lhs: param,
@@ -172,6 +168,55 @@ pub fn infer_let(binding: &Let, ctx: Ctx, tvars: TVars, lvl: i32) -> TypeScheme 
         level: lvl,
         body: res
     }
+}
+
+pub fn freshen_above(lim: i32, typ: SimpleTypeRef, tvars: TVars, lvl: i32,
+                     freshened: &mut HashMap<TVarId, TVarId>) -> SimpleTypeRef {
+    use SimpleType::*;
+    if typ.level(tvars) <= lim {
+        return typ;
+    }
+
+    let res = match &*typ {
+        Variable(key) => match freshened.get(&key) {
+            Some(key2) => Variable(*key2),
+            None => {
+                let v = tvars.fresh_var(lvl);
+                let key2 = v.tvar_id().unwrap();
+                freshened.insert(*key, key2);
+                let v_lower_bounds = tvars.get(&key)
+                    .lower_bounds.clone().into_iter().rev()
+                    .map(|t: SimpleTypeRef| {
+                        freshen_above(lim, t.clone(), tvars, lvl, freshened)
+                    })
+                    .rev()
+                    .collect();
+                let v_upper_bounds = tvars.get(&key)
+                    .upper_bounds.clone().into_iter().rev()
+                    .map(|t: SimpleTypeRef| {
+                        freshen_above(lim, t.clone(), tvars, lvl, freshened)
+                    })
+                    .rev()
+                    .collect();
+                let v = tvars.get_mut(&key2);
+                v.lower_bounds = v_lower_bounds;
+                v.upper_bounds = v_upper_bounds;
+                Variable(key2)
+            }
+        }
+        Function { lhs, rhs } => Function {
+            lhs: freshen_above(lim, lhs.clone(), tvars, lvl, freshened),
+            rhs: freshen_above(lim, rhs.clone(), tvars, lvl, freshened),
+        },
+        Record { fields } => Record {
+            fields: fields.iter().map(|(k, v)| (
+                k.clone(),
+                freshen_above(lim, v.clone(), tvars, lvl, freshened)
+            )).collect()
+        },
+        Primitive { name } => Primitive { name: name.clone() },
+    };
+    Rc::new(res)
 }
 
 // fn infer_types()

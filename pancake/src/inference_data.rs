@@ -2,8 +2,10 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use crate::vm2::Identifier;
+use crate::typeck::freshen_above;
 
 type SimpleTypeRef = Rc<SimpleType>;
+type TVars<'a> = &'a mut TVarRegistry;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum TypeScheme {
@@ -59,11 +61,6 @@ impl TVarRegistry {
         Rc::new(SimpleType::Variable(TVarId(self.tvars.len() - 1)))
     }
 
-    // pub fn push(&mut self, tvar: TypeVariable) -> TVarId {
-    //     self.tvars.push(tvar);
-    //     TVarId(self.tvars.len() - 1)
-    // }
-
     pub fn get(&self, key: &TVarId) -> &TypeVariable {
         self.tvars.get(key.0).unwrap()
     }
@@ -74,10 +71,12 @@ impl TVarRegistry {
 }
 
 impl TypeScheme {
-    pub fn instantiate(&self, lvl: i32) -> SimpleTypeRef {
+    pub fn instantiate(&self, tvars: TVars, lvl: i32) -> SimpleTypeRef {
         use TypeScheme::*;
         match self {
-            PolymorphicType { level, body } => { panic!(); } // freshen_above(*level, body),
+            PolymorphicType { level, body } =>
+                freshen_above(*level, body.clone(), tvars, lvl,
+                              &mut HashMap::new()),
             SimpleType(typ) => typ.clone()
         }
     }
@@ -85,7 +84,7 @@ impl TypeScheme {
     pub fn level(&self, tvars: &mut TVarRegistry) -> i32 {
         use TypeScheme::*;
         match self {
-            PolymorphicType { level, body } => *level,
+            PolymorphicType { level, body: _ } => *level,
             SimpleType(typ) => typ.level(tvars)
         }
     }

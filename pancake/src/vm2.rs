@@ -1,10 +1,10 @@
 pub use inlinable_string::InlinableString;
 use std::collections::HashMap;
 //use crate::types::Atom;
-use crate::ast::Expr;
+//use crate::ast::Expr;
 
 pub const SPECIAL_IDENTS: [&str; 6] = ["call", "let", "fn", "true", "false", "not"];
-pub type Stack = Vec<Expr>;
+//pub type Stack = Vec<Expr>;
 pub type Identifier = InlinableString;
 
 #[derive(Clone, Debug)]
